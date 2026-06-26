@@ -29,11 +29,11 @@ import torch
 from PIL import Image
 from tqdm import tqdm
 
-_SM_ROOT = os.environ.get("SEMANTIC_MATCHING_ROOT", "")
-if _SM_ROOT:
-    SEMANTIC_MATCHING_ROOT = Path(_SM_ROOT)
-    sys.path.insert(0, str(SEMANTIC_MATCHING_ROOT))
-    sys.path.insert(0, str(SEMANTIC_MATCHING_ROOT / "src"))
+_SAM3_WRAPPER_ROOT = os.environ.get("SAM3_WRAPPER_ROOT", "")
+if _SAM3_WRAPPER_ROOT:
+    SAM3_WRAPPER_ROOT = Path(_SAM3_WRAPPER_ROOT)
+    sys.path.insert(0, str(SAM3_WRAPPER_ROOT))
+    sys.path.insert(0, str(SAM3_WRAPPER_ROOT / "src"))
 
 
 @dataclass

@@ -16,9 +16,8 @@ import json
 import math
 import os
 import pickle
-import sys
 import tempfile
-from collections import Counter
+from collections import Counter, OrderedDict
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any, Iterable
@@ -31,23 +30,15 @@ from torch.utils.data import DataLoader, Dataset
 from torchvision import transforms
 from tqdm import tqdm
 
-from extract_animal_reid_baseline_embeddings import load_model as load_animal_reid_model
-from extract_dinov3_embeddings import (
-    DinoFeatureWrapper,
-    IMAGENET_MEAN,
-    IMAGENET_MEAN_255,
-    IMAGENET_STD,
-    load_dinov3_backbone,
-)
+IMAGENET_MEAN = [0.485, 0.456, 0.406]
+IMAGENET_STD = [0.229, 0.224, 0.225]
+IMAGENET_MEAN_255 = np.asarray(IMAGENET_MEAN, dtype=np.float32) * 255.0
 
 
 # Silhouette fill policy (documented):
 #   foreground silhouette = solid black, background = ImageNet-mean neutral fill.
-# We deliberately do NOT reuse extract_dinov3_embeddings.SILHOUETTE_COLOR_255
-# (gray 128), which is almost identical to the ImageNet-mean neutral fill
-# (~[124, 116, 104]) and renders the silhouette nearly invisible. Black on the
-# neutral background gives a high-contrast, non-textural shape cue so that
-# R_sil@k actually measures shape-as-shortcut rather than the fill ambiguity.
+# Black on the neutral background gives a high-contrast, non-textural shape cue
+# so that R_sil@k measures shape/crop evidence rather than fill ambiguity.
 CFR_SILHOUETTE_FILL_255 = np.asarray([0.0, 0.0, 0.0], dtype=np.float32)
 
 
@@ -61,9 +52,6 @@ CENTRAL_INDEX = Path(
 DEFAULT_OUTPUT_ROOT = Path(
     os.environ.get("CFR_OUTPUT_ROOT", str(RELEASE_ROOT / "outputs" / "cfr"))
 )
-_MEGAD_R_CKPT = os.environ.get("MEGADESCRIPTOR_RETRAINED_CKPT", "")
-MEGADESCRIPTOR_RETRAINED_CKPT = Path(_MEGAD_R_CKPT) if _MEGAD_R_CKPT else None
-
 VARIANTS = ("full", "foreground", "background", "silhouette")
 MISSING_TEXT_VALUES = {"", "unknown", "nan", "none", "na", "n/a", "null", "-1"}
 HEADLINE_DATASETS = (
@@ -95,10 +83,13 @@ DATASET_LABELS = {
 }
 
 MODEL_LABELS = {
-    "dinov3": "DINOv3",
-    "megadescriptor_retrained": r"MegaD$^R$",
     "miewid": "MiewID",
     "megadescriptor": "MegaDescriptor",
+}
+
+DEFAULT_MODEL_TAGS = {
+    "miewid": "conservationxlabs/miewid-msv3",
+    "megadescriptor": "hf-hub:BVRA/MegaDescriptor-L-384",
 }
 
 DEFAULT_SILHOUETTE_IDENTITY_DATASETS = {
@@ -220,6 +211,126 @@ class LoadedFeatureModel:
         self.checkpoint_report = checkpoint_report
 
 
+class FeatureModel(nn.Module):
+    def __init__(self, model: nn.Module):
+        super().__init__()
+        self.model = model
+
+    @torch.no_grad()
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        out = self.model(x)
+        if isinstance(out, dict):
+            for key in ("embeddings", "features", "last_hidden_state", "logits"):
+                if key in out:
+                    out = out[key]
+                    break
+        if isinstance(out, (tuple, list)):
+            out = out[0]
+        if out.ndim > 2:
+            out = out.mean(dim=tuple(range(1, out.ndim - 1)))
+        return torch.nn.functional.normalize(out.float(), p=2, dim=1)
+
+
+def as_state_dict(checkpoint: Any) -> dict[str, torch.Tensor]:
+    if isinstance(checkpoint, dict):
+        for key in ("state_dict", "model_state_dict", "model", "backbone"):
+            value = checkpoint.get(key)
+            if isinstance(value, dict):
+                return value
+    if not isinstance(checkpoint, dict):
+        raise TypeError(f"Checkpoint is not a state dict or checkpoint dict: {type(checkpoint)!r}")
+    return checkpoint
+
+
+def strip_state_dict_prefix(
+    state_dict: dict[str, torch.Tensor],
+    prefix: str,
+) -> OrderedDict[str, torch.Tensor]:
+    return OrderedDict(
+        (key[len(prefix) :] if key.startswith(prefix) else key, value)
+        for key, value in state_dict.items()
+    )
+
+
+def load_checkpoint(model: nn.Module, checkpoint_path: Path) -> dict[str, Any]:
+    checkpoint = torch.load(checkpoint_path, map_location="cpu")
+    state_dict = as_state_dict(checkpoint)
+    candidates: list[tuple[str, dict[str, torch.Tensor]]] = [("raw", state_dict)]
+    for prefix in ("module.", "model.", "backbone."):
+        if any(key.startswith(prefix) for key in state_dict):
+            candidates.append((f"strip:{prefix}", strip_state_dict_prefix(state_dict, prefix)))
+
+    best_name = ""
+    best_state_dict: dict[str, torch.Tensor] | None = None
+    best_missing: list[str] = []
+    best_unexpected: list[str] = []
+    best_score: int | None = None
+    errors: list[str] = []
+
+    for name, candidate in candidates:
+        try:
+            result = model.load_state_dict(candidate, strict=False)
+        except RuntimeError as exc:
+            errors.append(f"{name}: {exc}")
+            continue
+        missing = list(result.missing_keys)
+        unexpected = list(result.unexpected_keys)
+        score = len(missing) + len(unexpected)
+        if best_score is None or score < best_score:
+            best_name = name
+            best_state_dict = candidate
+            best_missing = missing
+            best_unexpected = unexpected
+            best_score = score
+        if score == 0:
+            break
+
+    if best_state_dict is None:
+        details = "\n".join(errors) if errors else "No loadable state-dict candidates."
+        raise RuntimeError(f"Failed to load checkpoint {checkpoint_path}:\n{details}")
+
+    model.load_state_dict(best_state_dict, strict=False)
+    return {
+        "path": str(checkpoint_path),
+        "key_transform": best_name,
+        "num_keys": len(best_state_dict),
+        "missing_count": len(best_missing),
+        "unexpected_count": len(best_unexpected),
+        "missing_keys_sample": best_missing[:20],
+        "unexpected_keys_sample": best_unexpected[:20],
+    }
+
+
+def load_animal_reid_model(
+    args: argparse.Namespace,
+    device: torch.device,
+) -> tuple[nn.Module, int, str, dict[str, Any] | None]:
+    model_tag = args.model_tag or DEFAULT_MODEL_TAGS[args.model]
+    checkpoint_report = None
+    if args.checkpoint_path and args.model != "megadescriptor":
+        raise ValueError("--checkpoint_path is currently supported only for --model megadescriptor")
+    if args.model == "miewid":
+        from transformers import AutoModel
+
+        model = AutoModel.from_pretrained(model_tag, trust_remote_code=True)
+        resize_size = args.resize_size or 440
+    elif args.model == "megadescriptor":
+        import timm
+
+        model = timm.create_model(model_tag, pretrained=args.checkpoint_path is None, num_classes=0)
+        if args.checkpoint_path:
+            checkpoint_report = load_checkpoint(model, args.checkpoint_path)
+        resize_size = args.resize_size or 384
+    else:
+        raise ValueError(f"Unsupported model: {args.model}")
+
+    model.to(device)
+    model.eval()
+    for param in model.parameters():
+        param.requires_grad = False
+    return FeatureModel(model).to(device).eval(), int(resize_size), model_tag, checkpoint_report
+
+
 def json_default(value: Any) -> Any:
     if isinstance(value, Path):
         return str(value)
@@ -287,14 +398,6 @@ def dataset_specs_from_index(index_path: Path) -> dict[str, DatasetSpec]:
 
 def get_model_specs() -> dict[str, ModelSpec]:
     return {
-        "dinov3": ModelSpec("dinov3", MODEL_LABELS["dinov3"], "dinov3"),
-        "megadescriptor_retrained": ModelSpec(
-            "megadescriptor_retrained",
-            MODEL_LABELS["megadescriptor_retrained"],
-            "animal_reid",
-            model_name="megadescriptor",
-            checkpoint_path=MEGADESCRIPTOR_RETRAINED_CKPT,
-        ),
         "miewid": ModelSpec(
             "miewid",
             MODEL_LABELS["miewid"],
@@ -656,20 +759,6 @@ def load_feature_model(
     args: argparse.Namespace,
     device: torch.device,
 ) -> LoadedFeatureModel:
-    if spec.kind == "dinov3":
-        raw_model, _embed_dim, resize_size = load_dinov3_backbone(
-            args.sm_root,
-            args.sm_config,
-            device,
-        )
-        model = DinoFeatureWrapper(raw_model, pooling=args.dinov3_pooling)
-        model.to(device).eval()
-        return LoadedFeatureModel(
-            model=model,
-            resize_size=int(args.resize_size or resize_size),
-            model_tag=f"dinov3:{args.dinov3_pooling}",
-        )
-
     if spec.kind == "animal_reid":
         ns = argparse.Namespace(
             model=spec.model_name,
@@ -692,15 +781,11 @@ def cache_tag(model_spec: ModelSpec, args: argparse.Namespace) -> str:
     """Config fingerprint embedded in cached embedding filenames.
 
     Encodes every knob that changes the produced embeddings but is NOT already
-    captured by (dataset, variant, model) so that, e.g., dinov3 ``cls`` vs
-    ``patch_mean`` or a different ``--crop_mode`` / ``--resize_size`` never
-    silently reuse a stale ``.npz``.
+    captured by (dataset, variant, model) so that a different ``--crop_mode``
+    or ``--resize_size`` never silently reuses a stale ``.npz``.
     """
     rs = args.resize_size if getattr(args, "resize_size", None) else "default"
-    parts = [f"crop-{args.crop_mode}", f"rs-{rs}"]
-    if model_spec.kind == "dinov3":
-        parts.append(f"pool-{args.dinov3_pooling}")
-    return "_".join(parts)
+    return "_".join([f"crop-{args.crop_mode}", f"rs-{rs}"])
 
 
 def embedding_path(
@@ -1363,8 +1448,6 @@ def select_datasets(args: argparse.Namespace, specs: dict[str, DatasetSpec]) -> 
 def select_models(args: argparse.Namespace, specs: dict[str, ModelSpec]) -> list[ModelSpec]:
     if args.models:
         keys = args.models
-    elif args.suite == "headline":
-        keys = ["dinov3", "megadescriptor_retrained"]
     else:
         keys = ["miewid", "megadescriptor"]
     missing = [key for key in keys if key not in specs]
@@ -1445,7 +1528,6 @@ def run_self_test() -> None:
             no_faiss=True,
             crop_mode="bbox",
             resize_size=None,
-            dinov3_pooling="cls",
             exclude_same_image=False,
             exclude_same_encounter=False,
         )
@@ -1591,7 +1673,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--models",
         nargs="*",
-        choices=["dinov3", "megadescriptor_retrained", "miewid", "megadescriptor"],
+        choices=["miewid", "megadescriptor"],
     )
     parser.add_argument("--mode", choices=["extract", "eval", "extract_eval"], default="extract_eval")
     parser.add_argument("--variants", nargs="+", default=list(VARIANTS), choices=list(VARIANTS))
@@ -1626,12 +1708,6 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--force_extract", action="store_true")
     parser.add_argument("--no_faiss", action="store_true")
     parser.add_argument("--dry_run", action="store_true")
-    parser.add_argument("--sm_root", default=os.environ.get("SEMANTIC_MATCHING_ROOT", ""))
-    parser.add_argument(
-        "--sm_config",
-        default=os.environ.get("DINO_CONFIG", ""),
-    )
-    parser.add_argument("--dinov3_pooling", choices=["cls", "patch_mean"], default="cls")
     parser.add_argument("--self_test", action="store_true", help="Run a synthetic CFR sanity test and exit.")
     return parser.parse_args()
 

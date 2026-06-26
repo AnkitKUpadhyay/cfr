@@ -30,8 +30,6 @@ def default_datasets(suite: str, central_index: Path) -> list[str]:
 
 
 def default_models(suite: str) -> list[str]:
-    if suite == "headline":
-        return ["dinov3", "megadescriptor_retrained"]
     return ["miewid", "megadescriptor"]
 
 
@@ -52,7 +50,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--models",
         nargs="*",
-        choices=["dinov3", "megadescriptor_retrained", "miewid", "megadescriptor"],
+        choices=["miewid", "megadescriptor"],
     )
     parser.add_argument("--ks", nargs="+", type=int, default=[1, 5, 10])
     parser.add_argument("--output_name", help="Default: cfr_normal_<suite>")
@@ -126,4 +124,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

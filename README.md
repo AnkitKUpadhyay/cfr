@@ -21,6 +21,7 @@ The paper promises the following release components:
 The code computes the final paper definitions of CFR and SSI directly. The
 large mask artifact is separate from this code repository. Its expected
 directory layout is described in `docs/artifact_manifest.md`.
+The released CFR table uses the public MiewID and MegaDescriptor models.
 
 ## Main Pipeline
 
@@ -48,14 +49,16 @@ Some datasets can be obtained through the `wildlife-datasets` package, while
 others require original-source downloads, Kaggle access, or author-provided
 metadata. See `docs/dataset_acquisition.md`.
 
-### 2. Extract SAM Masks
+### 2. Optional: Extract SAM Masks
+
+This step is only needed if you want to regenerate masks. To reproduce the CFR
+retrieval tables, use the released accepted-mask artifact and skip to Step 3.
 
 SAM extraction uses text prompts from `configs/sam_mask_jobs.template.jsonl`.
-Edit the image, metadata, and output paths, then run one job:
+Edit the image, metadata, and output paths, then run one job in an environment
+that provides SAM3 inference:
 
 ```bash
-export SEMANTIC_MATCHING_ROOT=/path/to/Semantic-Matching
-
 python scripts/run_wildlifedatasets_sam_mask_job.py \
   --manifest configs/sam_mask_jobs.template.jsonl \
   --index 0 \
@@ -142,14 +145,13 @@ paper drafting:
 
 ## Dependencies
 
-Install the Python packages in `requirements.txt`. SAM3 extraction depends on
-the same Semantic-Matching/SAM3 environment used for the experiments and may
-require a transformers build that exposes `Sam3Model` and `Sam3Processor`.
+Install the Python packages in `requirements.txt`. Reproducing the CFR tables
+requires the source images, the released accepted masks, and the MiewID and
+MegaDescriptor dependencies. Regenerating masks is optional and requires a
+SAM3-capable environment.
 
 MiewID is loaded through Hugging Face with `trust_remote_code=True`.
 MegaDescriptor is loaded through `timm`.
-DINOv3 evaluation requires a local DINOv3/Semantic-Matching setup and is
-controlled by `SEMANTIC_MATCHING_ROOT` and `DINO_CONFIG`.
 
 ## Notes for Anonymous Review
 
