@@ -153,11 +153,3 @@ SAM3-capable environment.
 MiewID is loaded through Hugging Face with `trust_remote_code=True`.
 MegaDescriptor is loaded through `timm`.
 
-## Notes for Anonymous Review
-
-- Do not upload raw images unless the source dataset license allows it.
-- Keep source dataset citations in the paper and any artifact documentation.
-- If masks are uploaded separately, preserve the directory structure in
-  `docs/artifact_manifest.md`.
-- The template paths intentionally use placeholders. They should be edited by
-  anyone rerunning the code on a different machine.
