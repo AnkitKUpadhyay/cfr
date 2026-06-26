@@ -1,0 +1,10 @@
+numpy
+torch
+torchvision
+pillow
+tqdm
+transformers
+timm
+pandas
+wildlife-datasets
+faiss-cpu
