@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import gzip
 import json
 import math
 import os
@@ -26,6 +27,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 from PIL import Image
+from pycocotools import mask as mask_utils
 from torch.utils.data import DataLoader, Dataset
 from torchvision import transforms
 from tqdm import tqdm
@@ -357,10 +359,12 @@ def clean_dataset_key(value: str) -> str:
     return value.strip().lower().replace("_", "").replace("-", "").replace(" ", "")
 
 
-def resolve_existing_path(primary: str, fallback: str = "") -> Path:
+def resolve_existing_path(primary: str, fallback: str = "", *, base_dir: Path | None = None) -> Path:
     candidates = [Path(primary)] if primary else []
     if fallback:
         candidates.append(Path(fallback))
+    if base_dir is not None:
+        candidates = [candidate if candidate.is_absolute() else base_dir / candidate for candidate in candidates]
     for candidate in candidates:
         if candidate.exists():
             return candidate
@@ -369,15 +373,28 @@ def resolve_existing_path(primary: str, fallback: str = "") -> Path:
 
 def dataset_specs_from_index(index_path: Path) -> dict[str, DatasetSpec]:
     specs: dict[str, DatasetSpec] = {}
+    base_dir = index_path.resolve().parent
     for row in read_tsv(index_path):
         dataset = row["dataset"]
         metadata = resolve_existing_path(
             row.get("central_metadata_input", ""),
             row.get("metadata_input", ""),
+            base_dir=base_dir,
         )
         image_root = Path(row["raw_image_root"])
-        mask_dir = Path(row["central_mask_dir"])
-        mask_pkl = mask_dir / "annotation_masks.pkl"
+        if not image_root.is_absolute():
+            image_root = base_dir / image_root
+        mask_dir_raw = row.get("central_mask_dir", "") or row.get("mask_dir", "")
+        mask_dir = Path(mask_dir_raw)
+        if not mask_dir.is_absolute():
+            mask_dir = base_dir / mask_dir
+        if row.get("annotation_masks_rle"):
+            mask_pkl = Path(row["annotation_masks_rle"])
+            if not mask_pkl.is_absolute():
+                mask_pkl = base_dir / mask_pkl
+        else:
+            rle_path = mask_dir / "annotation_masks_rle.json.gz"
+            mask_pkl = rle_path if rle_path.exists() else mask_dir / "annotation_masks.pkl"
         suffix = metadata.suffix.lower()
         input_type = "csv" if suffix == ".csv" else "json"
         specs[dataset] = DatasetSpec(
@@ -643,7 +660,21 @@ def load_records(spec: DatasetSpec) -> list[CfrRecord]:
     return load_json_records(spec)
 
 
+def load_rle_json(path: Path) -> dict[Any, Any]:
+    opener = gzip.open if path.suffix == ".gz" else open
+    with opener(path, "rt", encoding="utf-8") as handle:
+        obj = json.load(handle)
+    masks = {}
+    for record in obj.get("annotations", []):
+        ann_id = record["annotation_id"]
+        segmentation = record.get("segmentation")
+        masks[ann_id] = None if segmentation is None else mask_utils.decode(segmentation).astype(np.uint8)
+    return masks
+
+
 def load_mask_pkl(path: Path) -> dict[Any, Any]:
+    if path.name.endswith(".json") or path.name.endswith(".json.gz"):
+        return load_rle_json(path)
     with path.open("rb") as handle:
         obj = pickle.load(handle)
     if not isinstance(obj, dict):
@@ -1464,7 +1495,7 @@ def ensure_inputs_exist(datasets: Iterable[DatasetSpec]) -> None:
         if not spec.image_root.exists():
             problems.append(f"{spec.key}: missing image root {spec.image_root}")
         if not spec.mask_pkl.exists():
-            problems.append(f"{spec.key}: missing mask PKL {spec.mask_pkl}")
+            problems.append(f"{spec.key}: missing mask file {spec.mask_pkl}")
     if problems:
         raise SystemExit("Input validation failed:\n" + "\n".join(problems))
 

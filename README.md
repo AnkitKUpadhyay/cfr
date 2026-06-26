@@ -12,6 +12,7 @@ The paper promises the following release components:
 
 - CFR evaluation code: `scripts/run_cfr_evaluation.py`
 - Mask-generation code: `scripts/extract_wildlifedatasets_sam_masks.py`
+- Mask-artifact conversion code: `scripts/convert_mask_pickles_to_coco_rle.py`
 - Dataset manifests and prompt metadata: `configs/*.template.*`
 - Evaluation configs and Slurm examples: `slurm/*.sh`
 - Table-generation scripts: `scripts/summarize_cfr_results.py` and
@@ -39,11 +40,25 @@ The evaluator expects the TSV columns in the template, including:
 - `raw_image_root`
 - `central_metadata_input`
 - `central_mask_dir`
+- optionally `annotation_masks_rle`
 - `records_total`
 - `annotations_accepted`
 
-The `central_mask_dir` for each dataset must contain an
-`annotation_masks.pkl` file.
+The `central_mask_dir` for each dataset must contain either
+`annotation_masks_rle.json.gz` or `annotation_masks.pkl`. If the TSV contains
+an `annotation_masks_rle` column, that file is used directly. The anonymous
+mask artifact is distributed in the RLE JSON format.
+
+If you have local pickle masks and want to create the anonymous RLE artifact,
+use:
+
+```bash
+python scripts/convert_mask_pickles_to_coco_rle.py \
+  --index configs/cfr_dataset_index.tsv \
+  --output_root outputs/cfr_sam_mask_rle_release \
+  --prepare_release \
+  --convert
+```
 
 Some datasets can be obtained through the `wildlife-datasets` package, while
 others require original-source downloads, Kaggle access, or author-provided
