@@ -24,9 +24,56 @@ Important columns:
 - `manifest_prompts`: text prompts used for SAM extraction.
 - `notes`: dataset-specific caveats.
 
-## Per-Dataset Mask Directory
+## Included Per-Dataset Mask Directory
 
-Each `central_mask_dir` should have this structure:
+This repository includes the release-facing mask files under:
+
+```text
+Masks_data/
+  <dataset>/
+    annotation_masks_rle.json.gz
+    annotation_best_any_iou_masks_rle.json.gz
+```
+
+Both files are gzipped JSON files containing COCO-style compressed RLE masks
+from `pycocotools.mask.encode`. Their mask coordinate frame is the same as the
+internal extraction output: annotation-box coordinates for tight boxes, and
+image coordinates for full-image or crop-level annotations.
+
+`annotation_masks_rle.json.gz` is the file consumed by CFR evaluation. It
+stores accepted masks only; annotations without an accepted mask have
+`present=false` and `segmentation=null`.
+
+`annotation_best_any_iou_masks_rle.json.gz` stores the best available candidate
+for each annotation, including candidates that did not pass the acceptance
+rule. It is included to support mask audit and failure inspection.
+
+Each JSON file has this structure:
+
+```json
+{
+  "format": "cfr-mask-rle-v1",
+  "rle_encoding": "COCO compressed RLE from pycocotools.mask.encode",
+  "dataset": "<dataset>",
+  "annotations": [
+    {
+      "annotation_id": "<annotation id>",
+      "present": true,
+      "segmentation": {"size": [height, width], "counts": "<compressed RLE>"},
+      "area": 123,
+      "bbox": [x, y, width, height]
+    }
+  ]
+}
+```
+
+Use `pycocotools.mask.decode(record["segmentation"])` to recover a binary mask
+for any record with `present=true`.
+
+## Internal Audit Mask Directory
+
+If users regenerate masks from SAM outputs, the richer internal audit directory
+has this structure:
 
 ```text
 <central_mask_dir>/
@@ -39,15 +86,17 @@ Each `central_mask_dir` should have this structure:
     *.npz
 ```
 
-`annotation_masks.pkl` is the compatibility file consumed by
-`run_cfr_evaluation.py`. It maps annotation identifiers to accepted binary
+`annotation_masks.pkl` maps annotation identifiers to accepted binary
 foreground masks. Records without accepted masks are stored as missing or
-`None` and are excluded from CFR evaluation.
+`None` and are excluded from CFR evaluation. The release script
+`scripts/convert_mask_pickles_to_coco_rle.py` converts this pickle to
+`annotation_masks_rle.json.gz`.
 
 `annotation_best_any_iou_masks.pkl` stores the best available candidate even
-when it does not pass the acceptance rule. The JSONL files store candidate
-scores, candidate boxes, IoU values, prompt metadata, and links to candidate
-mask arrays. These files are for audit and quality control.
+when it does not pass the acceptance rule. The release script converts this
+pickle to `annotation_best_any_iou_masks_rle.json.gz`. The JSONL files store
+candidate scores, candidate boxes, IoU values, prompt metadata, and links to
+candidate mask arrays. These files are for audit and quality control.
 
 ## Acceptance Policy
 

@@ -13,6 +13,7 @@ The paper promises the following release components:
 - CFR evaluation code: `scripts/run_cfr_evaluation.py`
 - Mask-generation code: `scripts/extract_wildlifedatasets_sam_masks.py`
 - Mask-artifact conversion code: `scripts/convert_mask_pickles_to_coco_rle.py`
+- Released RLE masks for the evaluated datasets: `Masks_data/<dataset>/`
 - Dataset manifests and prompt metadata: `configs/*.template.*`
 - Evaluation configs and Slurm examples: `slurm/*.sh`
 - Table-generation scripts: `scripts/summarize_cfr_results.py` and
@@ -20,9 +21,29 @@ The paper promises the following release components:
 - Paper result tables: `results/*.csv` and `results/*.tex`
 
 The code computes the final paper definitions of CFR and SSI directly. The
-large mask artifact is separate from this code repository. Its expected
-directory layout is described in `docs/artifact_manifest.md`.
+released foreground masks are included in this repository as COCO-style
+compressed RLE JSON files. Their directory layout is described in
+`docs/artifact_manifest.md`.
 The released CFR table uses the public MiewID and MegaDescriptor models.
+
+## Included Mask Resource
+
+This repository includes accepted and best-candidate SAM masks for the 34
+datasets used in the CFR evaluation:
+
+```text
+Masks_data/
+  <dataset>/
+    annotation_masks_rle.json.gz
+    annotation_best_any_iou_masks_rle.json.gz
+```
+
+`annotation_masks_rle.json.gz` is the evaluation file: annotations without an
+accepted mask have `present=false` and `segmentation=null`.
+`annotation_best_any_iou_masks_rle.json.gz` stores the best available candidate
+for each annotation, including candidates that did not pass the acceptance
+rule. Raw source images and source metadata are not redistributed here; obtain
+those from the original dataset sources.
 
 ## Main Pipeline
 
@@ -45,9 +66,9 @@ The evaluator expects the TSV columns in the template, including:
 - `annotations_accepted`
 
 The `central_mask_dir` for each dataset must contain either
-`annotation_masks_rle.json.gz` or `annotation_masks.pkl`. If the TSV contains
-an `annotation_masks_rle` column, that file is used directly. The anonymous
-mask artifact is distributed in the RLE JSON format.
+`annotation_masks_rle.json.gz` or `annotation_masks.pkl`. For the included mask
+resource, set `central_mask_dir` to `Masks_data/<dataset>`. If the TSV contains
+an `annotation_masks_rle` column, that file is used directly.
 
 If you have local pickle masks and want to create the anonymous RLE artifact,
 use:
@@ -167,4 +188,3 @@ SAM3-capable environment.
 
 MiewID is loaded through Hugging Face with `trust_remote_code=True`.
 MegaDescriptor is loaded through `timm`.
-

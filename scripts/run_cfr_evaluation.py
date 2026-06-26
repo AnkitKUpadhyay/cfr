@@ -359,12 +359,26 @@ def clean_dataset_key(value: str) -> str:
     return value.strip().lower().replace("_", "").replace("-", "").replace(" ", "")
 
 
-def resolve_existing_path(primary: str, fallback: str = "", *, base_dir: Path | None = None) -> Path:
+def expand_relative_path(path: Path, base_dirs: Iterable[Path]) -> list[Path]:
+    if path.is_absolute():
+        return [path]
+    return [base / path for base in base_dirs]
+
+
+def resolve_existing_path(
+    primary: str,
+    fallback: str = "",
+    *,
+    base_dirs: Iterable[Path] | None = None,
+) -> Path:
     candidates = [Path(primary)] if primary else []
     if fallback:
         candidates.append(Path(fallback))
-    if base_dir is not None:
-        candidates = [candidate if candidate.is_absolute() else base_dir / candidate for candidate in candidates]
+    if base_dirs is not None:
+        expanded: list[Path] = []
+        for candidate in candidates:
+            expanded.extend(expand_relative_path(candidate, base_dirs))
+        candidates = expanded
     for candidate in candidates:
         if candidate.exists():
             return candidate
@@ -373,25 +387,19 @@ def resolve_existing_path(primary: str, fallback: str = "", *, base_dir: Path | 
 
 def dataset_specs_from_index(index_path: Path) -> dict[str, DatasetSpec]:
     specs: dict[str, DatasetSpec] = {}
-    base_dir = index_path.resolve().parent
+    base_dirs = (index_path.resolve().parent, RELEASE_ROOT, Path.cwd())
     for row in read_tsv(index_path):
         dataset = row["dataset"]
         metadata = resolve_existing_path(
             row.get("central_metadata_input", ""),
             row.get("metadata_input", ""),
-            base_dir=base_dir,
+            base_dirs=base_dirs,
         )
-        image_root = Path(row["raw_image_root"])
-        if not image_root.is_absolute():
-            image_root = base_dir / image_root
+        image_root = resolve_existing_path(row["raw_image_root"], base_dirs=base_dirs)
         mask_dir_raw = row.get("central_mask_dir", "") or row.get("mask_dir", "")
-        mask_dir = Path(mask_dir_raw)
-        if not mask_dir.is_absolute():
-            mask_dir = base_dir / mask_dir
+        mask_dir = resolve_existing_path(mask_dir_raw, base_dirs=base_dirs)
         if row.get("annotation_masks_rle"):
-            mask_pkl = Path(row["annotation_masks_rle"])
-            if not mask_pkl.is_absolute():
-                mask_pkl = base_dir / mask_pkl
+            mask_pkl = resolve_existing_path(row["annotation_masks_rle"], base_dirs=base_dirs)
         else:
             rle_path = mask_dir / "annotation_masks_rle.json.gz"
             mask_pkl = rle_path if rle_path.exists() else mask_dir / "annotation_masks.pkl"
