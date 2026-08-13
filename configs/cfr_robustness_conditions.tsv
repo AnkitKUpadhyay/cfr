@@ -1,0 +1,28 @@
+perturbation	severity	seed	scope	description
+mask_erode	low	0	auto	remove 5 percent of mask area from the boundary
+mask_erode	medium	0	auto	remove 10 percent of mask area from the boundary
+mask_erode	high	0	auto	remove 20 percent of mask area from the boundary
+mask_dilate	low	0	auto	add 5 percent of mask area along the boundary
+mask_dilate	medium	0	auto	add 10 percent of mask area along the boundary
+mask_dilate	high	0	auto	add 20 percent of mask area along the boundary
+mask_interior_false_negative	low	0	auto	remove a compact interior region equal to 5 percent of mask area
+mask_interior_false_negative	medium	0	auto	remove a compact interior region equal to 10 percent of mask area
+mask_interior_false_negative	high	0	auto	remove a compact interior region equal to 20 percent of mask area
+mask_exterior_false_positive	low	0	auto	add a separated exterior region equal to 5 percent of mask area
+mask_exterior_false_positive	medium	0	auto	add a separated exterior region equal to 10 percent of mask area
+mask_exterior_false_positive	high	0	auto	add a separated exterior region equal to 20 percent of mask area
+gaussian_noise	low	0	auto	Gaussian pixel noise with sigma 0.02 on the zero-to-one scale
+gaussian_noise	medium	0	auto	Gaussian pixel noise with sigma 0.05 on the zero-to-one scale
+gaussian_noise	high	0	auto	Gaussian pixel noise with sigma 0.10 on the zero-to-one scale
+gaussian_blur	low	0	auto	Gaussian blur with radius 1
+gaussian_blur	medium	0	auto	Gaussian blur with radius 2
+gaussian_blur	high	0	auto	Gaussian blur with radius 4
+jpeg_compression	low	0	auto	JPEG quality 80
+jpeg_compression	medium	0	auto	JPEG quality 50
+jpeg_compression	high	0	auto	JPEG quality 20
+foreground_cutout	low	0	auto	neutral-fill compact foreground occlusion equal to 5 percent of mask area
+foreground_cutout	medium	0	auto	neutral-fill compact foreground occlusion equal to 10 percent of mask area
+foreground_cutout	high	0	auto	neutral-fill compact foreground occlusion equal to 20 percent of mask area
+background_cutout	low	0	auto	neutral-fill compact background occlusion equal to 5 percent of mask area
+background_cutout	medium	0	auto	neutral-fill compact background occlusion equal to 10 percent of mask area
+background_cutout	high	0	auto	neutral-fill compact background occlusion equal to 20 percent of mask area

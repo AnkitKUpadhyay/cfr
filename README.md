@@ -170,6 +170,35 @@ By default, silhouette is not counted as shortcut evidence for whale-style
 datasets where contour can be valid identity evidence. Override this policy
 with `--silhouette_identity_datasets`.
 
+### 6. Optional: Robustness Analysis
+
+The post-review robustness runner tests mask-quality sensitivity and degraded
+field queries while preserving the Table S3 annotation crops, accepted record
+set, neutral fill, gallery rule, public models, and final CFR/SSI formulas. See
+`ROBUSTNESS_EXPERIMENTS.md` for the experimental design and
+`configs/cfr_robustness_conditions.tsv` for the three severity levels.
+
+Mask perturbations are applied to both query and gallery masks. Image
+corruptions are applied to queries while the original clean embeddings form the
+gallery. Run one condition with:
+
+```bash
+python scripts/run_cfr_robustness.py \
+  --central_index configs/cfr_dataset_index.tsv \
+  --clean_embedding_root outputs/cfr \
+  --output_root outputs/cfr_robustness \
+  --suite all \
+  --models miewid megadescriptor \
+  --perturbation gaussian_blur \
+  --severity medium \
+  --require_faiss
+```
+
+After the conditions finish, collect dataset-level and macro results with
+`scripts/collect_cfr_robustness.py`. The collector also writes a compact LaTeX
+table containing changes in Full, CFR, and SSI and rank correlations with the
+clean evidence profiles.
+
 ## Reproducing the Included CSVs
 
 The included files under `results/` are the final CSV and LaTeX tables used for
