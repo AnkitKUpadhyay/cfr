@@ -1,0 +1,2 @@
+key	label	foreground_fraction	missing_foreground_policy	model_tag	checkpoint_path
+megad_full22	Full image	0.00	full	hf-hub:BVRA/MegaDescriptor-L-384	/path/to/full-image-baseline/megadescriptor-l-384-backbone.pt

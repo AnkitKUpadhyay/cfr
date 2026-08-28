@@ -40,6 +40,27 @@ The extraction summary records the achieved fraction.
 Stochastic regions and noise are deterministic per dataset, annotation,
 condition, severity, and seed.
 
+## Random seeds
+
+Seed 0 is included in `configs/cfr_robustness_conditions.tsv`. We repeat the
+five stochastic conditions with seeds 1 and 2 using
+`configs/cfr_robustness_extra_seeds.tsv`:
+
+- interior mask false negatives
+- exterior mask false positives
+- Gaussian noise
+- foreground CutOut
+- background CutOut
+
+Mask erosion, mask dilation, Gaussian blur, and JPEG compression are
+deterministic, so rerunning them with another seed would reproduce the same
+input. Launch the two additional seeds with the same submission helper:
+
+```bash
+CFR_CONDITIONS_FILE=configs/cfr_robustness_extra_seeds.tsv \
+  slurm/submit_cfr_robustness_sweeps.sh low medium high
+```
+
 ## Outputs
 
 Each condition writes aggregate JSON under:
@@ -51,3 +72,19 @@ conditions/<condition-tag>/results/<model>/<dataset>_<model>_robustness.json
 Condition embeddings may be deleted after successful evaluation to avoid
 hundreds of gigabytes of redundant storage. They are reproducible from the
 condition manifest and code.
+
+Collect the completed conditions and summarize variation across seeds with:
+
+```bash
+python scripts/collect_cfr_robustness.py \
+  --baseline_csv /path/to/clean_table_s3.csv \
+  --results_root /path/to/cfr_robustness \
+  --output_dir outputs/cfr_robustness_summary
+
+python scripts/summarize_cfr_robustness_seeds.py \
+  --input_dir outputs/cfr_robustness_summary \
+  --output_dir outputs/cfr_robustness_summary
+```
+
+The output directory contains generated analysis CSVs and LaTeX tables. These
+artifacts are not required in the source repository.

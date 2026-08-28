@@ -1,0 +1,31 @@
+perturbation	severity	seed	scope	description
+mask_interior_false_negative	low	1	auto	seed 1: remove a compact interior region equal to 5 percent of mask area
+mask_interior_false_negative	low	2	auto	seed 2: remove a compact interior region equal to 5 percent of mask area
+mask_exterior_false_positive	low	1	auto	seed 1: add a separated exterior region equal to 5 percent of mask area
+mask_exterior_false_positive	low	2	auto	seed 2: add a separated exterior region equal to 5 percent of mask area
+gaussian_noise	low	1	auto	seed 1: Gaussian pixel noise with sigma 0.02 on the zero-to-one scale
+gaussian_noise	low	2	auto	seed 2: Gaussian pixel noise with sigma 0.02 on the zero-to-one scale
+foreground_cutout	low	1	auto	seed 1: neutral-fill compact foreground occlusion equal to 5 percent of mask area
+foreground_cutout	low	2	auto	seed 2: neutral-fill compact foreground occlusion equal to 5 percent of mask area
+background_cutout	low	1	auto	seed 1: neutral-fill compact background occlusion equal to 5 percent of mask area
+background_cutout	low	2	auto	seed 2: neutral-fill compact background occlusion equal to 5 percent of mask area
+mask_interior_false_negative	medium	1	auto	seed 1: remove a compact interior region equal to 10 percent of mask area
+mask_interior_false_negative	medium	2	auto	seed 2: remove a compact interior region equal to 10 percent of mask area
+mask_exterior_false_positive	medium	1	auto	seed 1: add a separated exterior region equal to 10 percent of mask area
+mask_exterior_false_positive	medium	2	auto	seed 2: add a separated exterior region equal to 10 percent of mask area
+gaussian_noise	medium	1	auto	seed 1: Gaussian pixel noise with sigma 0.05 on the zero-to-one scale
+gaussian_noise	medium	2	auto	seed 2: Gaussian pixel noise with sigma 0.05 on the zero-to-one scale
+foreground_cutout	medium	1	auto	seed 1: neutral-fill compact foreground occlusion equal to 10 percent of mask area
+foreground_cutout	medium	2	auto	seed 2: neutral-fill compact foreground occlusion equal to 10 percent of mask area
+background_cutout	medium	1	auto	seed 1: neutral-fill compact background occlusion equal to 10 percent of mask area
+background_cutout	medium	2	auto	seed 2: neutral-fill compact background occlusion equal to 10 percent of mask area
+mask_interior_false_negative	high	1	auto	seed 1: remove a compact interior region equal to 20 percent of mask area
+mask_interior_false_negative	high	2	auto	seed 2: remove a compact interior region equal to 20 percent of mask area
+mask_exterior_false_positive	high	1	auto	seed 1: add a separated exterior region equal to 20 percent of mask area
+mask_exterior_false_positive	high	2	auto	seed 2: add a separated exterior region equal to 20 percent of mask area
+gaussian_noise	high	1	auto	seed 1: Gaussian pixel noise with sigma 0.10 on the zero-to-one scale
+gaussian_noise	high	2	auto	seed 2: Gaussian pixel noise with sigma 0.10 on the zero-to-one scale
+foreground_cutout	high	1	auto	seed 1: neutral-fill compact foreground occlusion equal to 20 percent of mask area
+foreground_cutout	high	2	auto	seed 2: neutral-fill compact foreground occlusion equal to 20 percent of mask area
+background_cutout	high	1	auto	seed 1: neutral-fill compact background occlusion equal to 20 percent of mask area
+background_cutout	high	2	auto	seed 2: neutral-fill compact background occlusion equal to 20 percent of mask area

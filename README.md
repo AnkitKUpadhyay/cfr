@@ -19,6 +19,9 @@ The paper promises the following release components:
 - Table-generation scripts: `scripts/summarize_cfr_results.py` and
   `scripts/recompute_paper_cfr_scores.py`
 - Paper result tables: `results/*.csv` and `results/*.tex`
+- Revision robustness code: `scripts/run_cfr_robustness.py`
+- Foreground-mixed MegaDescriptor ablation code:
+  `experiments/megadescriptor_mix_ablation/`
 
 The code computes the final paper definitions of CFR and SSI directly. The
 released foreground masks are included in this repository as COCO-style
@@ -195,9 +198,25 @@ python scripts/run_cfr_robustness.py \
 ```
 
 After the conditions finish, collect dataset-level and macro results with
-`scripts/collect_cfr_robustness.py`. The collector also writes a compact LaTeX
-table containing changes in Full, CFR, and SSI and rank correlations with the
-clean evidence profiles.
+`scripts/collect_cfr_robustness.py`. The collector writes paired dataset-level
+CSVs and compact LaTeX summary tables for low, medium, and high severity. The
+tables report changes in Full, CFR, and SSI together with rank correlations
+against the clean evidence profiles. Stochastic perturbations use seeds 0, 1,
+and 2; the additional seed conditions and aggregation script are documented in
+`ROBUSTNESS_EXPERIMENTS.md`.
+
+### 7. Optional: Foreground-Mixed Training Ablation
+
+The revision also evaluates a matched MegaDescriptor family to test whether
+foreground-only inputs are merely unfamiliar at inference time. The experiment
+compares a full-image baseline with checkpoints trained using foreground-only
+inputs for 25%, 50%, or 75% of selected samples. When a selected sample has no
+accepted mask, these runs use its full image.
+
+Evaluation, collection, and evidence-quadrant plotting code is under
+`experiments/megadescriptor_mix_ablation/`. Checkpoint paths are supplied
+through a private local TSV and are never copied into generated artifacts. See
+the experiment README for the registry format and commands.
 
 ## Reproducing the Included CSVs
 
@@ -207,6 +226,10 @@ paper drafting:
 - `cfr_results_compact_k1.csv`: compact table columns for sharing.
 - `cfr_results_detailed_k1.csv`: detailed table with final intermediate signals.
 - `table_all_miewid_megad_ssi_cfr_formula_k1.tex`: LaTeX table.
+
+Generated robustness and foreground-mixing result files are intentionally not
+versioned. The paper reports those results, while the released scripts recreate
+the corresponding CSVs, tables, and figures from local evaluation outputs.
 
 ## Dependencies
 

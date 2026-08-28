@@ -18,6 +18,7 @@ import run_cfr_evaluation as base
 
 
 METRICS = ("full", "foreground", "background", "silhouette", "ssi", "cfr")
+SUMMARY_METRICS = ("random", *METRICS)
 DISPLAY_NAMES = {
     "mask_erode": "Mask erosion",
     "mask_dilate": "Mask dilation",
@@ -29,6 +30,53 @@ DISPLAY_NAMES = {
     "foreground_cutout": "Foreground CutOut",
     "background_cutout": "Background CutOut",
 }
+SEVERITY_ORDER = ("low", "medium", "high")
+SEVERITY_CAPTIONS = {
+    "low": (
+        r"Mask and CutOut area $5\%$, Gaussian noise $\sigma=0.02$, "
+        r"blur radius 1, and JPEG quality 80"
+    ),
+    "medium": (
+        r"Mask and CutOut area $10\%$, Gaussian noise $\sigma=0.05$, "
+        r"blur radius 2, and JPEG quality 50"
+    ),
+    "high": (
+        r"Mask and CutOut area $20\%$, Gaussian noise $\sigma=0.10$, "
+        r"blur radius 4, and JPEG quality 20"
+    ),
+}
+EXPORT_FIELDS = (
+    "dataset",
+    "dataset_label",
+    "model",
+    "model_label",
+    "condition",
+    "condition_tag",
+    "family",
+    "severity",
+    "severity_value",
+    "seed",
+    "scope",
+    "k",
+    "num_embeddings",
+    "valid_queries",
+    "random",
+    "full",
+    "foreground",
+    "background",
+    "silhouette",
+    "shortcut_view",
+    "ssi",
+    "cfr",
+    "delta_full",
+    "delta_foreground",
+    "delta_background",
+    "delta_silhouette",
+    "delta_ssi",
+    "delta_cfr",
+    "mean_mask_changed_fraction",
+    "mean_image_changed_fraction",
+)
 
 
 def as_float(value: Any) -> float | None:
@@ -161,7 +209,6 @@ def robustness_rows(results_root: Path) -> list[dict[str, Any]]:
                     "shortcut_view": scores.get("shortcut_view"),
                     "ssi": scores.get("ssi"),
                     "cfr": scores.get("cfr"),
-                    "result_json": str(path),
                     "mean_mask_changed_fraction": extraction.get(
                         "mean_mask_changed_fraction"
                     ),
@@ -173,11 +220,19 @@ def robustness_rows(results_root: Path) -> list[dict[str, Any]]:
     return rows
 
 
-def write_rows(rows: list[dict[str, Any]], path: Path) -> None:
+def write_rows(
+    rows: list[dict[str, Any]],
+    path: Path,
+    fields: tuple[str, ...] | None = None,
+) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    fields = sorted({key for row in rows for key in row})
+    output_fields = fields or tuple(sorted({key for row in rows for key in row}))
     with path.open("w", newline="") as handle:
-        writer = csv.DictWriter(handle, fieldnames=fields)
+        writer = csv.DictWriter(
+            handle,
+            fieldnames=output_fields,
+            extrasaction="ignore",
+        )
         writer.writeheader()
         writer.writerows(rows)
 
@@ -190,7 +245,7 @@ def add_clean_deltas(rows: list[dict[str, Any]]) -> None:
     }
     for row in rows:
         baseline = clean.get((row["dataset"], row["model"], row["k"]))
-        for metric in METRICS:
+        for metric in SUMMARY_METRICS:
             value = as_float(row.get(metric))
             reference = as_float(baseline.get(metric)) if baseline else None
             row[f"delta_{metric}"] = (
@@ -224,7 +279,7 @@ def macro_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
             "k": k,
             "datasets": len(group),
         }
-        for metric in METRICS:
+        for metric in SUMMARY_METRICS:
             values = [as_float(row.get(metric)) for row in group]
             finite = [value for value in values if value is not None]
             result[f"mean_{metric}"] = sum(finite) / len(finite) if finite else None
@@ -259,15 +314,47 @@ def latex_score(value: Any, signed: bool = False) -> str:
     number = as_float(value)
     if number is None:
         return "--"
+    if round(number, 3) == 0:
+        return "0.000"
     return f"{number:+.3f}" if signed else f"{number:.3f}"
 
 
-def write_medium_latex(rows: list[dict[str, Any]], path: Path) -> None:
-    selected = [
-        row
-        for row in rows
-        if row["severity"] == "medium" and row["condition"] in DISPLAY_NAMES
-    ]
+def average_table_rows_across_seeds(
+    rows: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    groups: dict[tuple[str, str], list[dict[str, Any]]] = defaultdict(list)
+    for row in rows:
+        groups[(row["condition"], row["model"])].append(row)
+
+    fields = (
+        "mean_delta_full",
+        "mean_delta_cfr",
+        "mean_abs_delta_cfr",
+        "mean_delta_ssi",
+        "mean_abs_delta_ssi",
+        "spearman_cfr",
+        "spearman_ssi",
+    )
+    output: list[dict[str, Any]] = []
+    for group in groups.values():
+        result = dict(group[0])
+        result["seed_count"] = len(group)
+        for field in fields:
+            values = [as_float(row.get(field)) for row in group]
+            finite = [value for value in values if value is not None]
+            result[field] = sum(finite) / len(finite) if finite else None
+        output.append(result)
+    return output
+
+
+def severity_table_lines(rows: list[dict[str, Any]], severity: str) -> list[str]:
+    selected = average_table_rows_across_seeds(
+        [
+            row
+            for row in rows
+            if row["severity"] == severity and row["condition"] in DISPLAY_NAMES
+        ]
+    )
     condition_order = {
         name: index
         for index, name in enumerate(DISPLAY_NAMES)
@@ -279,14 +366,15 @@ def write_medium_latex(rows: list[dict[str, Any]], path: Path) -> None:
             model_order.get(row["model"], 99),
         )
     )
-    lines = [
+    lines: list[str] = [
         r"\begin{table*}[t]",
         r"\centering",
         r"\scriptsize",
-        r"\setlength{\tabcolsep}{4.0pt}",
-        r"\begin{tabular}{@{}llrrrrrr@{}}",
+        r"\setlength{\tabcolsep}{3.4pt}",
+        r"\renewcommand{\arraystretch}{0.96}",
+        r"\begin{tabular}{@{}llrrrrrrr@{}}",
         r"\toprule",
-        r"\textbf{Perturbation} & \textbf{Model} & $\Delta$\textbf{Full} & $\Delta$\textbf{CFR} & $|\Delta\mathrm{CFR}|$ & $\Delta$\textbf{SSI} & $\rho_{\mathrm{CFR}}$ & $\rho_{\mathrm{SSI}}$ \\",
+        r"\textbf{Perturbation} & \textbf{Model} & $\Delta$\textbf{Full} & $\Delta$\textbf{CFR} & $|\Delta\mathrm{CFR}|$ & $\Delta$\textbf{SSI} & $|\Delta\mathrm{SSI}|$ & $\rho_{\mathrm{CFR}}$ & $\rho_{\mathrm{SSI}}$ \\",
         r"\midrule",
     ]
     last_condition = None
@@ -302,6 +390,7 @@ def write_medium_latex(rows: list[dict[str, Any]], path: Path) -> None:
             f"{latex_score(row.get('mean_delta_cfr'), signed=True)} & "
             f"{latex_score(row.get('mean_abs_delta_cfr'))} & "
             f"{latex_score(row.get('mean_delta_ssi'), signed=True)} & "
+            f"{latex_score(row.get('mean_abs_delta_ssi'))} & "
             f"{latex_score(row.get('spearman_cfr'))} & "
             f"{latex_score(row.get('spearman_ssi'))} \\\\"
         )
@@ -310,12 +399,28 @@ def write_medium_latex(rows: list[dict[str, Any]], path: Path) -> None:
         [
             r"\bottomrule",
             r"\end{tabular}",
-            r"\caption{\textbf{CFR robustness at medium perturbation severity.} Values are macro-averaged over the 34 Table~S3 datasets. Deltas are relative to the clean protocol; $\rho$ is the Spearman correlation between clean and perturbed dataset-level evidence profiles.}",
-            r"\label{tab:cfr-robustness-medium}",
+            (
+                rf"\caption{{\textbf{{Sensitivity at {severity} perturbation severity.}} "
+                + SEVERITY_CAPTIONS[severity]
+                + r". Each row macro-averages paired changes over 34 datasets. "
+                r"$\Delta$ is the perturbed score minus the clean score, "
+                r"$|\Delta|$ is the mean absolute paired change, and $\rho$ is "
+                r"the Spearman correlation between clean and perturbed "
+                r"dataset-level scores. Stochastic conditions are averaged "
+                r"over three seeds; deterministic conditions use one run.}"
+            ),
+            rf"\label{{tab:cfr-robustness-{severity}}}",
             r"\end{table*}",
             "",
         ]
     )
+    return lines
+
+
+def write_all_severity_latex(rows: list[dict[str, Any]], path: Path) -> None:
+    lines: list[str] = []
+    for severity in SEVERITY_ORDER:
+        lines.extend(severity_table_lines(rows, severity))
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text("\n".join(lines))
 
@@ -333,10 +438,22 @@ def main() -> None:
     output_dir = args.output_dir or args.results_root / "summaries"
     rows = baseline_rows(args.baseline_csv) + robustness_rows(args.results_root)
     add_clean_deltas(rows)
-    write_rows(rows, output_dir / "cfr_robustness_all_rows.csv")
+    write_rows(
+        rows,
+        output_dir / "cfr_robustness_all_rows.csv",
+        fields=EXPORT_FIELDS,
+    )
+    for severity in SEVERITY_ORDER:
+        write_rows(
+            [row for row in rows if row.get("severity") == severity],
+            output_dir / f"cfr_robustness_{severity}_all_datasets.csv",
+            fields=EXPORT_FIELDS,
+        )
     macro = macro_rows(rows)
     write_rows(macro, output_dir / "cfr_robustness_macro.csv")
-    write_medium_latex(macro, output_dir / "cfr_robustness_medium.tex")
+    write_all_severity_latex(
+        macro, output_dir / "cfr_robustness_all_severities.tex"
+    )
     print(f"Collected {len(rows)} rows under {output_dir}")
 
 

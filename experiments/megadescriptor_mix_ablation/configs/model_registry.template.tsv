@@ -1,0 +1,4 @@
+key	label	foreground_fraction	missing_foreground_policy	model_tag	checkpoint_path
+megad_fg25_fallback	Foreground 25%	0.25	full	hf-hub:BVRA/MegaDescriptor-L-384	/path/to/fg-25-full-fallback/megadescriptor-l-384-backbone.pt
+megad_fg50_fallback	Foreground 50%	0.50	full	hf-hub:BVRA/MegaDescriptor-L-384	/path/to/fg-50-full-fallback/megadescriptor-l-384-backbone.pt
+megad_fg75_fallback	Foreground 75%	0.75	full	hf-hub:BVRA/MegaDescriptor-L-384	/path/to/fg-75-full-fallback/megadescriptor-l-384-backbone.pt
