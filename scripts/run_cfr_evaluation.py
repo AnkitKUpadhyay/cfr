@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""Run Counterfactual Foreground Retrieval (CFR) evaluation.
+"""Run CounterFactual Retrieval (CFR) evaluation.
 
 This is the central, release-facing runner for the WACV CFR experiments.  It
 reads the central SAM-mask dataset index, extracts/caches embeddings for each
 requested model and counterfactual input view, evaluates all-vs-all retrieval on
 the mask-valid full dataset, and writes detailed intermediate results plus
-paper-ready summary tables.
+machine-readable JSON and CSV summaries.
 """
 
 from __future__ import annotations
@@ -72,7 +72,7 @@ DATASET_LABELS = {
     "whaleshark": "Whale shark",
     "leopard": "Leopard",
     "saimaa_seal": "Saimaa seal",
-    "seaturtle_head": "SeaTurtle head",
+    "seaturtle_head": "SeaTurtleID2022",
     "stripespotter": "StripeSpotter",
     "hyenaid2022": "HyenaID2022",
     "BrownBearHeads": "BrownBearHeads",
@@ -1412,63 +1412,6 @@ def flatten_result_for_k(result: dict[str, Any], k: int) -> dict[str, Any]:
     return row
 
 
-def format_score(value: Any) -> str:
-    if value is None:
-        return "--"
-    try:
-        if isinstance(value, float) and (math.isnan(value) or math.isinf(value)):
-            return "--"
-        return f"{float(value):.3f}"
-    except Exception:
-        return str(value)
-
-
-def write_latex_table(rows: list[dict[str, Any]], path: Path, caption: str, label: str) -> None:
-    order = []
-    seen = set()
-    for row in rows:
-        key = row["dataset"]
-        if key not in seen:
-            seen.add(key)
-            order.append(key)
-    by_dataset = {dataset: [row for row in rows if row["dataset"] == dataset] for dataset in order}
-    lines = [
-        r"\begin{table}[!t]",
-        r"\centering",
-        r"\scriptsize",
-        r"\setlength{\tabcolsep}{5.5pt}",
-        r"\begin{tabular}{@{}llrrrrrrr@{}}",
-        r"\toprule",
-        r"\textbf{Dataset} & \textbf{Model} & \textbf{Rand.} & \textbf{Full} & \textbf{Fg} & \textbf{Bg} & \textbf{Sil} & \textbf{SSI} & \textbf{CFR} \\",
-        r"\midrule",
-    ]
-    for d_idx, dataset in enumerate(order):
-        ds_rows = by_dataset[dataset]
-        for r_idx, row in enumerate(ds_rows):
-            ds_label = row["dataset_label"] if r_idx == 0 else ""
-            lines.append(
-                f"{ds_label} & {row['model_label']} & "
-                f"{format_score(row['random'])} & {format_score(row['full'])} & "
-                f"{format_score(row['foreground'])} & {format_score(row['background'])} & "
-                f"{format_score(row['silhouette'])} & {format_score(row.get('ssi'))} & "
-                f"{format_score(row['cfr'])} \\\\"
-            )
-        if d_idx != len(order) - 1:
-            lines.append(r"\midrule")
-    lines.extend(
-        [
-            r"\bottomrule",
-            r"\end{tabular}",
-            rf"\caption{{{caption}}}",
-            rf"\label{{{label}}}",
-            r"\end{table}",
-            "",
-        ]
-    )
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text("\n".join(lines))
-
-
 def select_datasets(args: argparse.Namespace, specs: dict[str, DatasetSpec]) -> list[DatasetSpec]:
     if args.datasets:
         keys = args.datasets
@@ -1690,16 +1633,6 @@ def run(args: argparse.Namespace) -> None:
         for k in args.ks:
             rows_k = [row for row in summary_rows if row["k"] == k]
             write_dict_rows(rows_k, args.output_root / f"cfr_summary_{args.suite}_k{k}.csv")
-            write_latex_table(
-                rows_k,
-                args.output_root / f"cfr_table_{args.suite}_k{k}.tex",
-                caption=(
-                    f"Counterfactual Foreground Retrieval components at rank {k}. "
-                    "SSI is shortcut recoverability relative to full-image signal; "
-                    "CFR is foreground-supported retrieval."
-                ),
-                label=f"tab:cfr-{args.suite}-k{k}",
-            )
         print(f"Wrote summaries under {args.output_root}", flush=True)
 
 

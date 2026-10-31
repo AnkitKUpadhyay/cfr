@@ -2,8 +2,7 @@
 """Collect full-image-control and foreground-mixed MegaDescriptor CFR results.
 
 The collector recomputes SSI and CFR from raw retrieval rates using the final
-paper formulas, writes analysis-ready CSVs, and creates supplementary LaTeX
-tables. It never copies checkpoint paths into the generated artifacts.
+paper formulas and writes analysis-ready CSVs. It never copies checkpoint paths into the generated artifacts.
 """
 
 from __future__ import annotations
@@ -55,7 +54,7 @@ DATASET_LABELS = {
     "whaleshark": "Whale shark",
     "leopard": "Leopard",
     "saimaa_seal": "Saimaa seal",
-    "seaturtle_head": "SeaTurtle head",
+    "seaturtle_head": "SeaTurtleID2022",
     "stripespotter": "StripeSpotter",
     "hyenaid2022": "HyenaID2022",
     "BrownBearHeads": "BrownBearHeads",
@@ -72,19 +71,6 @@ BASELINE_MODEL = "megad_full22"
 
 def normalized(text: str) -> str:
     return text.strip().lower().replace("_", " ")
-
-
-def latex_escape(value: Any) -> str:
-    text = str(value)
-    for source, target in (
-        ("\\", r"\textbackslash{}"),
-        ("&", r"\&"),
-        ("%", r"\%"),
-        ("_", r"\_"),
-        ("#", r"\#"),
-    ):
-        text = text.replace(source, target)
-    return text
 
 
 def read_dataset_order(path: Path) -> list[str]:
@@ -165,144 +151,6 @@ def finite_mean(rows: Iterable[dict[str, Any]], key: str) -> float | None:
     return fmean(values) if values else None
 
 
-def fmt(value: Any) -> str:
-    return "--" if value is None else f"{float(value):.3f}"
-
-
-def short_model_label(row: dict[str, Any]) -> str:
-    if row["model"] == BASELINE_MODEL:
-        return "Full"
-    fraction = int(round(float(row["foreground_fraction"]) * 100))
-    return f"Fg{fraction}"
-
-
-def tabular_lines(datasets: list[str], rows_by_dataset: dict[str, list[dict[str, Any]]]) -> list[str]:
-    lines = [
-        r"\begin{tabular}[t]{@{}llrrrrrrr@{}}",
-        r"\toprule",
-        r"\textbf{Dataset} & \textbf{Model} & \textbf{Rand.} & \textbf{Full} & \textbf{Fg} & \textbf{Bg+Sil} & \textbf{Sil} & \textbf{SSI} & \textbf{CFR} \\",
-        r"\midrule",
-    ]
-    for dataset_index, dataset in enumerate(datasets):
-        rows = rows_by_dataset[dataset]
-        for model_index, row in enumerate(rows):
-            dataset_text = latex_escape(row["dataset_label"]) if model_index == 0 else ""
-            values = [
-                dataset_text,
-                short_model_label(row),
-                fmt(row["random"]),
-                fmt(row["full"]),
-                fmt(row["foreground"]),
-                fmt(row["background"]),
-                fmt(row["silhouette"]),
-                fmt(row["ssi"]),
-                fmt(row["cfr"]),
-            ]
-            lines.append(" & ".join(values) + r" \\")
-        if dataset_index != len(datasets) - 1:
-            lines.append(r"\midrule")
-    lines.extend([r"\bottomrule", r"\end{tabular}"])
-    return lines
-
-
-def write_detailed_tables(
-    path: Path,
-    datasets: list[str],
-    detailed_rows: list[dict[str, Any]],
-    label_prefix: str,
-    scope_text: str,
-) -> None:
-    rows_by_dataset: dict[str, list[dict[str, Any]]] = defaultdict(list)
-    for row in detailed_rows:
-        rows_by_dataset[row["dataset"]].append(row)
-
-    blocks: list[str] = []
-    for start in range(0, len(datasets), 4):
-        chunk = datasets[start : start + 4]
-        left = chunk[:2]
-        right = chunk[2:]
-        table_number = start // 4 + 1
-        blocks.extend(
-            [
-                r"\begin{table*}[!t]",
-                r"\centering",
-                r"\scriptsize",
-                r"\setlength{\tabcolsep}{2.2pt}",
-                r"\resizebox{\textwidth}{!}{%",
-                *tabular_lines(left, rows_by_dataset),
-            ]
-        )
-        if right:
-            blocks.extend([r"\hfill", *tabular_lines(right, rows_by_dataset)])
-        blocks.extend(
-            [
-                r"}",
-                (
-                    r"\caption{\textbf{MegaDescriptor foreground-mixing ablation ("
-                    + latex_escape(scope_text)
-                    + r").} Full is MegaD$^C$, the full-image-only baseline trained on the "
-                    r"same 22-dataset collection with no foreground-only inputs. Fg25, Fg50, "
-                    r"and Fg75 denote foreground-input probability; selected samples without "
-                    r"an accepted mask use the full image. Values are top-1 retrieval rates "
-                    r"except SSI and CFR.}"
-                ),
-                rf"\label{{tab:{label_prefix}-{table_number}}}",
-                r"\end{table*}",
-                "",
-            ]
-        )
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text("\n".join(blocks))
-
-
-def write_macro_table(path: Path, rows: list[dict[str, Any]]) -> None:
-    lines = [
-        r"\begin{table*}[!t]",
-        r"\centering",
-        r"\scriptsize",
-        r"\setlength{\tabcolsep}{3.2pt}",
-        r"\resizebox{\textwidth}{!}{%",
-        r"\begin{tabular}{@{}llrrrrrrrr@{}}",
-        r"\toprule",
-        r"\textbf{Evaluation set} & \textbf{Model} & \textbf{Full} & \textbf{Fg} & \textbf{SSI} & \textbf{CFR} & $\Delta$\textbf{Full} & $\Delta$\textbf{Fg} & $\Delta$\textbf{SSI} & $\Delta$\textbf{CFR} \\",
-        r"\midrule",
-    ]
-    previous_subset = None
-    for row in rows:
-        if previous_subset is not None and row["evaluation_set"] != previous_subset:
-            lines.append(r"\midrule")
-        previous_subset = row["evaluation_set"]
-        values = [
-            latex_escape(row["evaluation_set"]),
-            latex_escape(row["model_label"]),
-            fmt(row["full"]),
-            fmt(row["foreground"]),
-            fmt(row["ssi"]),
-            fmt(row["cfr"]),
-            fmt(row["delta_full"]),
-            fmt(row["delta_foreground"]),
-            fmt(row["delta_ssi"]),
-            fmt(row["delta_cfr"]),
-        ]
-        lines.append(" & ".join(values) + r" \\")
-    lines.extend(
-        [
-            r"\bottomrule",
-            r"\end{tabular}",
-            r"}",
-            r"\caption{\textbf{Macro-average MegaDescriptor foreground-mixing ablation.} "
-            r"OOD contains the 12 datasets absent from the 22-dataset retraining collection; "
-            r"training overlap contains those 22 datasets. Deltas are relative to the "
-            r"full-image MegaD$^C$ baseline within each evaluation set.}",
-            r"\label{tab:megad-mix-ablation-macro}",
-            r"\end{table*}",
-            "",
-        ]
-    )
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text("\n".join(lines))
-
-
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--central_index", type=Path, required=True)
@@ -317,7 +165,7 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
-    output_dir = args.output_dir or args.ablation_root / "tables"
+    output_dir = args.output_dir or args.ablation_root / "summaries"
     datasets = read_dataset_order(args.central_index)
     baseline_registry = read_registry(args.baseline_registry)
     if len(baseline_registry) != 1 or baseline_registry[0]["key"] != BASELINE_MODEL:
@@ -406,28 +254,7 @@ def main() -> None:
 
     write_csv(output_dir / "megadescriptor_mix_ablation_detailed_k1.csv", detailed)
     write_csv(output_dir / "megadescriptor_mix_ablation_macro_k1.csv", macro)
-    write_macro_table(output_dir / "table_megadescriptor_mix_ablation_macro_k1.tex", macro)
 
-    complete_datasets = [
-        dataset
-        for dataset in datasets
-        if sum(row["dataset"] == dataset for row in detailed) == len(models)
-    ]
-    ood_datasets = [dataset for dataset in complete_datasets if dataset not in TRAINING_DATASETS]
-    write_detailed_tables(
-        output_dir / "table_megadescriptor_mix_ablation_ood_detailed_k1.tex",
-        ood_datasets,
-        detailed,
-        "megad-mix-ood",
-        "OOD datasets",
-    )
-    write_detailed_tables(
-        output_dir / "table_megadescriptor_mix_ablation_all_detailed_k1.tex",
-        complete_datasets,
-        detailed,
-        "megad-mix-all",
-        "all datasets",
-    )
 
     status = {
         "datasets": len(datasets),

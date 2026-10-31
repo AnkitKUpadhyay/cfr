@@ -2,8 +2,8 @@
 
 This experiment uses the exact annotation crops, accepted masks, neutral fill,
 query/gallery validity rule, MiewID and MegaDescriptor checkpoints, and final
-CFR/SSI formulas used for Table S3. Clean Table S3 embeddings are read from a
-separate immutable directory.
+CFR/SSI formulas used for the paper's reference evaluation. Clean embeddings
+are read from a separate directory and are not modified.
 
 ## Perturbation scope
 
@@ -13,7 +13,7 @@ separate immutable directory.
   degraded field observations queried against the original reference gallery.
 - The full-image view is unchanged by mask perturbations.
 - The accepted annotation set and its ordering never change.
-- Production evaluation requires FAISS, matching Table S3. This matters for
+- Paper reproduction requires FAISS, matching the reference evaluation. This matters for
   exact ties that occur in some shortcut-only embeddings.
 
 ## Mask perturbations
@@ -77,7 +77,7 @@ Collect the completed conditions and summarize variation across seeds with:
 
 ```bash
 python scripts/collect_cfr_robustness.py \
-  --baseline_csv /path/to/clean_table_s3.csv \
+  --baseline_csv /path/to/cfr_summary_reference_k1.csv \
   --results_root /path/to/cfr_robustness \
   --output_dir outputs/cfr_robustness_summary
 
@@ -86,5 +86,5 @@ python scripts/summarize_cfr_robustness_seeds.py \
   --output_dir outputs/cfr_robustness_summary
 ```
 
-The output directory contains generated analysis CSVs and LaTeX tables. These
-artifacts are not required in the source repository.
+The output directory contains dataset-level metrics, paired changes from the
+clean reference, macro averages and variation across seeds as CSV files.

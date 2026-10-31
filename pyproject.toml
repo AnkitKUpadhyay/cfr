@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cfr-sam3-masks"
+version = "0.3.0"
+description = "Reproducible annotation-crop SAM3 mask extraction"
+readme = "README.md"
+license = {file = "LICENSE"}
+requires-python = ">=3.10"
+dependencies = ["numpy>=1.24", "Pillow>=9.5", "pycocotools>=2.0.7"]
+
+[project.urls]
+Repository = "https://github.com/AnkitKUpadhyay/cfr"
+Masks = "https://huggingface.co/datasets/imageomics/cfr-wildlife-masks"
+
+[project.scripts]
+cfr-sam3-masks = "sam3_masks.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["sam3_masks*"]

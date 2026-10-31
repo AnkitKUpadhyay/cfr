@@ -41,9 +41,9 @@ All four checkpoints use the same settings:
 The collector reports separately the 22 datasets represented in the training
 collection and the following 12 unseen datasets:
 
-`SeaTurtle head`, `StripeSpotter`, `HyenaID2022`, `NyalaData`, `Reunion
-turtles`, `Amvrakikos turtles`, `Melops`, `CzechLynx`, `BrownBearHeads`,
-`Whale shark`, `Leopard`, and `Saimaa seal`.
+`SeaTurtleID2022`, `StripeSpotter`, `HyenaID2022`, `NyalaData`,
+`ReunionTurtles`, `AmvrakikosTurtles`, `Melops`, `CzechLynx`, `BrownBearHeads`,
+`WhaleShark`, `Leopard`, and `SaimaaSeal`.
 
 ## Run the Sweep
 
@@ -75,7 +75,7 @@ and `--array=0-33%20`. Store both arrays under the same output root. Distinct
 model keys prevent output collisions. Set `CFR_DRY_RUN=1` to inspect task
 mapping without loading a checkpoint or writing results.
 
-## Collect and Plot
+## Collect Metrics
 
 ```bash
 python experiments/megadescriptor_mix_ablation/collect_mix_ablation.py \
@@ -90,8 +90,8 @@ python experiments/megadescriptor_mix_ablation/summarize_mix_ablation.py \
   --output_dir outputs/megadescriptor_mix_ablation
 ```
 
-The collector expects `34 x 4 = 136` complete results unless
-`--allow_missing` is used for a progress check. The summarizer applies the
-Figure 6 descriptive boundaries, writes quadrant transitions and counts, and
-creates macro and dataset-movement figures. Generated CSVs, LaTeX tables, and
-figures belong under `outputs/` and are intentionally not versioned.
+For the paper configuration, the collector expects `34 x 4 = 136` complete
+results unless `--allow_missing` is used for a progress check. The summarizer
+writes macro metrics and evidence-quadrant transitions and counts as CSVs.
+Its CFR and SSI boundaries of 0.5 are descriptive, not calibrated thresholds.
+Generated metrics belong under `outputs/` and are not versioned.

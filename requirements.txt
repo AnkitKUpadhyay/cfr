@@ -1,13 +1,16 @@
-numpy
+# CFR evaluation, dataset preparation, and mask downloads.
+# SAM3 inference has its own pinned environment in requirements-sam3.txt.
+numpy>=1.24
 scipy
 torch
 torchvision
-pillow
+Pillow>=9.5
 tqdm
 transformers
 timm
 pandas
 wildlife-datasets
 faiss-cpu
-matplotlib
-pycocotools
+pycocotools>=2.0.7
+huggingface-hub>=1.2.3
+pyarrow

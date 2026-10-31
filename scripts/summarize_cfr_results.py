@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Collect saved CFR JSON results into CSV and LaTeX tables."""
+"""Collect saved CFR JSON results into CSV summaries."""
 
 from __future__ import annotations
 
@@ -13,10 +13,8 @@ from run_cfr_evaluation import (
     HEADLINE_DATASETS,
     dataset_specs_from_index,
     flatten_result_for_k,
-    get_model_specs,
     json_default,
     write_dict_rows,
-    write_latex_table,
 )
 
 
@@ -62,7 +60,6 @@ def main() -> None:
     args = parse_args()
     datasets = args.datasets or default_datasets(args.suite, args.central_index)
     models = args.models or default_models(args.suite)
-    model_specs = get_model_specs()
 
     missing: list[str] = []
     results: list[dict[str, Any]] = []
@@ -93,18 +90,6 @@ def main() -> None:
     for k in args.ks:
         rows_k = [row for row in rows if row["k"] == k]
         write_dict_rows(rows_k, args.results_root / f"{output_name}_k{k}.csv")
-        model_labels = ", ".join(model_specs[m].label for m in models)
-        write_latex_table(
-            rows_k,
-            args.results_root / f"{output_name}_k{k}.tex",
-            caption=(
-                f"Counterfactual Foreground Retrieval components at rank {k} "
-                f"for {args.suite} datasets using {model_labels}. "
-                "Gallery is all accepted-mask annotations except the query annotation itself; "
-                "same-image and same-encounter exclusions are not applied."
-            ),
-            label=f"tab:{output_name.replace('_', '-')}-k{k}",
-        )
 
     status = {
         "results_root": str(args.results_root),

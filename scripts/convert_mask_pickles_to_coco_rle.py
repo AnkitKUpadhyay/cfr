@@ -217,13 +217,12 @@ def write_release_readme(rows: list[dict[str, str]], output_root: Path) -> None:
     coverage = accepted / total * 100 if total else 0.0
     text = f"""# CFR SAM Mask RLE Artifact
 
-This anonymous artifact contains the derived foreground-mask resource used for
-the 34-dataset CFR evaluation. The masks are converted from the internal pickle
-files to JSON files containing COCO-style compressed RLE segmentations from
+This artifact contains masks for {len(rows)} selected CFR datasets. The masks
+are converted from local pickle files to JSON files containing COCO-style
+compressed RLE segmentations from
 `pycocotools.mask.encode`.
 
-Raw source images are not included here unless allowed by the original dataset
-license. The released masks contain no absolute source paths.
+Raw source images are not included. The mask records contain no absolute source paths.
 
 ## Coverage
 

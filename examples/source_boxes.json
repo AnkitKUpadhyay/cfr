@@ -1,0 +1,8 @@
+{
+  "images": [{"id": "frame_001", "file_name": "originals/frame_001.jpg"}],
+  "categories": [{"id": 1, "name": "giraffe"}, {"id": 2, "name": "zebra"}],
+  "annotations": [
+    {"id": "ann_001", "image_id": "frame_001", "category_id": 1, "bbox": [100, 80, 500, 400]},
+    {"id": "ann_002", "image_id": "frame_001", "category_id": 2, "bbox": [650, 100, 300, 250]}
+  ]
+}

@@ -1,0 +1,102 @@
+{
+  "repo_id": "imageomics/cfr-wildlife-masks",
+  "releases": {
+    "paper": {
+      "revision": "7655704d058af7fa4ed5e3b901cff1d521d7ede7",
+      "dataset_root": "Masks_data",
+      "dataset_files": [
+        "annotation_masks_rle.json.gz"
+      ],
+      "candidate_file": "annotation_best_any_iou_masks_rle.json.gz",
+      "root_files": [
+        "README.md",
+        "summary.json",
+        "configs/cfr_dataset_index.template.tsv"
+      ],
+      "datasets": {
+        "AAUZebraFish": "AAUZebraFish",
+        "ATRW": "ATRW",
+        "AerialCattle2017": "AerialCattle2017",
+        "AmvrakikosTurtles": "amvrakikosturtles",
+        "BelugaID": "BelugaID",
+        "BirdIndividualID": "BirdIndividualID",
+        "BrownBearHeads": "BrownBearHeads",
+        "CTai": "CTai",
+        "CZoo": "CZoo",
+        "Cows2021": "Cows2021",
+        "CzechLynx": "czechlynx",
+        "FriesianCattle2015": "FriesianCattle2015",
+        "FriesianCattle2017": "FriesianCattle2017",
+        "GiraffeZebraID": "GiraffeZebraID",
+        "Giraffes": "Giraffes",
+        "HappyWhale": "HappyWhale",
+        "HumpbackWhaleID": "HumpbackWhaleID",
+        "HyenaID2022": "hyenaid2022",
+        "IPanda50": "IPanda50",
+        "Leopard": "leopard",
+        "LionData": "LionData",
+        "MacaqueFaces": "MacaqueFaces",
+        "Melops": "melops",
+        "NDD20": "NDD20",
+        "NOAARightWhale": "NOAARightWhale",
+        "NyalaData": "nyaladata",
+        "OpenCows2020": "OpenCows2020",
+        "ReunionTurtles": "reunionturtles",
+        "SMALST": "SMALST",
+        "SaimaaSeal": "saimaa_seal",
+        "SeaTurtleID2022": "seaturtle_head",
+        "StripeSpotter": "stripespotter",
+        "WhaleShark": "whaleshark",
+        "ZindiTurtleRecall": "ZindiTurtleRecall"
+      }
+    },
+    "standardized": {
+      "revision": "3baa6a58da04cc18bf5e21f77cf0d366efe1e5f7",
+      "dataset_root": "data",
+      "dataset_files": [
+        "masks.json.gz",
+        "metadata.parquet",
+        "summary.json"
+      ],
+      "root_files": [
+        "README.md"
+      ],
+      "datasets": {
+        "AAUZebraFish": "AAUZebraFish",
+        "ATRW": "ATRW",
+        "AerialCattle2017": "AerialCattle2017",
+        "AmvrakikosTurtles": "AmvrakikosTurtles",
+        "BelugaID": "BelugaID",
+        "BrownBearHeads": "BrownBearHeads",
+        "CTai": "CTai",
+        "CZoo": "CZoo",
+        "CattleMuzzle": "CattleMuzzle",
+        "Cows2021": "Cows2021",
+        "DogFaceNet": "DogFaceNet",
+        "FriesianCattle2017": "FriesianCattle2017",
+        "GiraffeZebraID": "GiraffeZebraID",
+        "Giraffes": "Giraffes",
+        "HappyWhale": "HappyWhale",
+        "HumpbackWhaleID": "HumpbackWhaleID",
+        "HyenaID2022": "HyenaID2022",
+        "IPanda50": "IPanda50",
+        "Leopard": "Leopard",
+        "LionData": "LionData",
+        "MPDD": "MPDD",
+        "MacaqueFaces": "MacaqueFaces",
+        "Melops": "Melops",
+        "NOAARightWhale": "NOAARightWhale",
+        "NyalaData": "NyalaData",
+        "OpenCows2020": "OpenCows2020",
+        "PolarBearVidID": "PolarBearVidID",
+        "ReunionTurtles": "ReunionTurtles",
+        "SaimaaSeal": "SaimaaSeal",
+        "SeaStarReID2023": "SeaStarReID2023",
+        "StripeSpotter": "StripeSpotter",
+        "WhaleShark": "WhaleShark",
+        "ZakynthosTurtles": "ZakynthosTurtles",
+        "ZindiTurtleRecall": "ZindiTurtleRecall"
+      }
+    }
+  }
+}

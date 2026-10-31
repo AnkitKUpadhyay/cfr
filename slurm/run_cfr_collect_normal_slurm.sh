@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Example Slurm wrapper for collecting CFR result JSONs into CSV and LaTeX.
+# Example Slurm wrapper for collecting CFR result JSONs into CSV summaries.
 
 #SBATCH --job-name=cfr_collect
 #SBATCH --account=YOUR_ACCOUNT
@@ -31,5 +31,4 @@ python scripts/summarize_cfr_results.py \
 python scripts/recompute_paper_cfr_scores.py \
   --input_csv "${OUTPUT_ROOT}/cfr_summary_reference_k1.csv" \
   --output_csv "${OUTPUT_ROOT}/cfr_results_compact_k1.csv" \
-  --output_tex "${OUTPUT_ROOT}/cfr_results_compact_k1.tex" \
   --k 1

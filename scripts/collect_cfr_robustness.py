@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Collect CFR robustness JSON files and compare them with Table S3."""
+"""Collect CFR robustness JSON files and compare them with clean reference results."""
 
 from __future__ import annotations
 
@@ -19,32 +19,7 @@ import run_cfr_evaluation as base
 
 METRICS = ("full", "foreground", "background", "silhouette", "ssi", "cfr")
 SUMMARY_METRICS = ("random", *METRICS)
-DISPLAY_NAMES = {
-    "mask_erode": "Mask erosion",
-    "mask_dilate": "Mask dilation",
-    "mask_interior_false_negative": "Interior false negative",
-    "mask_exterior_false_positive": "Exterior false positive",
-    "gaussian_noise": "Gaussian noise",
-    "gaussian_blur": "Gaussian blur",
-    "jpeg_compression": "JPEG compression",
-    "foreground_cutout": "Foreground CutOut",
-    "background_cutout": "Background CutOut",
-}
 SEVERITY_ORDER = ("low", "medium", "high")
-SEVERITY_CAPTIONS = {
-    "low": (
-        r"Mask and CutOut area $5\%$, Gaussian noise $\sigma=0.02$, "
-        r"blur radius 1, and JPEG quality 80"
-    ),
-    "medium": (
-        r"Mask and CutOut area $10\%$, Gaussian noise $\sigma=0.05$, "
-        r"blur radius 2, and JPEG quality 50"
-    ),
-    "high": (
-        r"Mask and CutOut area $20\%$, Gaussian noise $\sigma=0.10$, "
-        r"blur radius 4, and JPEG quality 20"
-    ),
-}
 EXPORT_FIELDS = (
     "dataset",
     "dataset_label",
@@ -310,121 +285,6 @@ def macro_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return output
 
 
-def latex_score(value: Any, signed: bool = False) -> str:
-    number = as_float(value)
-    if number is None:
-        return "--"
-    if round(number, 3) == 0:
-        return "0.000"
-    return f"{number:+.3f}" if signed else f"{number:.3f}"
-
-
-def average_table_rows_across_seeds(
-    rows: list[dict[str, Any]],
-) -> list[dict[str, Any]]:
-    groups: dict[tuple[str, str], list[dict[str, Any]]] = defaultdict(list)
-    for row in rows:
-        groups[(row["condition"], row["model"])].append(row)
-
-    fields = (
-        "mean_delta_full",
-        "mean_delta_cfr",
-        "mean_abs_delta_cfr",
-        "mean_delta_ssi",
-        "mean_abs_delta_ssi",
-        "spearman_cfr",
-        "spearman_ssi",
-    )
-    output: list[dict[str, Any]] = []
-    for group in groups.values():
-        result = dict(group[0])
-        result["seed_count"] = len(group)
-        for field in fields:
-            values = [as_float(row.get(field)) for row in group]
-            finite = [value for value in values if value is not None]
-            result[field] = sum(finite) / len(finite) if finite else None
-        output.append(result)
-    return output
-
-
-def severity_table_lines(rows: list[dict[str, Any]], severity: str) -> list[str]:
-    selected = average_table_rows_across_seeds(
-        [
-            row
-            for row in rows
-            if row["severity"] == severity and row["condition"] in DISPLAY_NAMES
-        ]
-    )
-    condition_order = {
-        name: index
-        for index, name in enumerate(DISPLAY_NAMES)
-    }
-    model_order = {"miewid": 0, "megadescriptor": 1}
-    selected.sort(
-        key=lambda row: (
-            condition_order[row["condition"]],
-            model_order.get(row["model"], 99),
-        )
-    )
-    lines: list[str] = [
-        r"\begin{table*}[t]",
-        r"\centering",
-        r"\scriptsize",
-        r"\setlength{\tabcolsep}{3.4pt}",
-        r"\renewcommand{\arraystretch}{0.96}",
-        r"\begin{tabular}{@{}llrrrrrrr@{}}",
-        r"\toprule",
-        r"\textbf{Perturbation} & \textbf{Model} & $\Delta$\textbf{Full} & $\Delta$\textbf{CFR} & $|\Delta\mathrm{CFR}|$ & $\Delta$\textbf{SSI} & $|\Delta\mathrm{SSI}|$ & $\rho_{\mathrm{CFR}}$ & $\rho_{\mathrm{SSI}}$ \\",
-        r"\midrule",
-    ]
-    last_condition = None
-    for row in selected:
-        condition = row["condition"]
-        if last_condition is not None and condition != last_condition:
-            lines.append(r"\midrule")
-        label = DISPLAY_NAMES[condition] if condition != last_condition else ""
-        model = "MiewID" if row["model"] == "miewid" else "MegaDescriptor"
-        lines.append(
-            f"{label} & {model} & "
-            f"{latex_score(row.get('mean_delta_full'), signed=True)} & "
-            f"{latex_score(row.get('mean_delta_cfr'), signed=True)} & "
-            f"{latex_score(row.get('mean_abs_delta_cfr'))} & "
-            f"{latex_score(row.get('mean_delta_ssi'), signed=True)} & "
-            f"{latex_score(row.get('mean_abs_delta_ssi'))} & "
-            f"{latex_score(row.get('spearman_cfr'))} & "
-            f"{latex_score(row.get('spearman_ssi'))} \\\\"
-        )
-        last_condition = condition
-    lines.extend(
-        [
-            r"\bottomrule",
-            r"\end{tabular}",
-            (
-                rf"\caption{{\textbf{{Sensitivity at {severity} perturbation severity.}} "
-                + SEVERITY_CAPTIONS[severity]
-                + r". Each row macro-averages paired changes over 34 datasets. "
-                r"$\Delta$ is the perturbed score minus the clean score, "
-                r"$|\Delta|$ is the mean absolute paired change, and $\rho$ is "
-                r"the Spearman correlation between clean and perturbed "
-                r"dataset-level scores. Stochastic conditions are averaged "
-                r"over three seeds; deterministic conditions use one run.}"
-            ),
-            rf"\label{{tab:cfr-robustness-{severity}}}",
-            r"\end{table*}",
-            "",
-        ]
-    )
-    return lines
-
-
-def write_all_severity_latex(rows: list[dict[str, Any]], path: Path) -> None:
-    lines: list[str] = []
-    for severity in SEVERITY_ORDER:
-        lines.extend(severity_table_lines(rows, severity))
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text("\n".join(lines))
-
-
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--results_root", type=Path, required=True)
@@ -451,9 +311,6 @@ def main() -> None:
         )
     macro = macro_rows(rows)
     write_rows(macro, output_dir / "cfr_robustness_macro.csv")
-    write_all_severity_latex(
-        macro, output_dir / "cfr_robustness_all_severities.tex"
-    )
     print(f"Collected {len(rows)} rows under {output_dir}")
 
 

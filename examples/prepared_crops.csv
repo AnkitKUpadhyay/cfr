@@ -1,0 +1,3 @@
+annotation_id,image_id,path,input_kind,species,source_image,source_bbox_xywh
+crop_001,crop_001,crops/giraffe_001.jpg,prepared_crop,giraffe,originals/frame_001.jpg,"[100, 80, 500, 400]"
+crop_002,crop_002,crops/zebra_002.jpg,prepared_crop,zebra,originals/frame_001.jpg,"[650, 100, 300, 250]"

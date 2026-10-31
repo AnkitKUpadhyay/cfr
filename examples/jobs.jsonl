@@ -1,0 +1,3 @@
+{"dataset":"NyalaData","metadata":"native_crops.csv","image_root":"/path/to/nyala","output_dir":"../outputs/nyala_antelope_v1","prompts":["antelope"]}
+{"dataset":"GiraffeZebraID","metadata":"prepared_crops.csv","image_root":"/path/to/giraffezebraid","output_dir":"../outputs/giraffezebraid_v1","prompt_map":"prompts.json"}
+{"dataset":"MixedSpecies","metadata":"source_boxes.json","image_root":"/path/to/dataset","output_dir":"../outputs/source_boxes_v1","prompt_map":"prompts.json"}

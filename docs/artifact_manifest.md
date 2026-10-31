@@ -1,134 +1,54 @@
-# CFR Artifact Manifest
+# CFR evaluation inputs and outputs
 
-This document describes the non-code artifacts expected by the CFR scripts.
-The image datasets themselves should be obtained from their original sources.
+## Dataset index
 
-## Dataset Index
+Copy [the TSV template](../configs/cfr_dataset_index.template.tsv) to a local file and edit its paths. Its counts and prompts describe the historical mask collection; use the appropriate inventory when evaluating updated masks.
 
-The evaluator reads a TSV index with one row per dataset. A template is
-provided at:
+| Field | Meaning |
+|---|---|
+| `dataset` | Evaluation key; historical keys are preserved in the template. |
+| `group` | Organizational label retained from the input inventory. |
+| `raw_image_root` | Root for paths in the annotation metadata. |
+| `central_metadata_input` | CSV or COCO/GZCD-style JSON containing annotation IDs, image references, identities, and any annotation boxes. |
+| `central_mask_dir` | Folder containing `annotation_masks_rle.json.gz` (or a trusted local legacy pickle). |
+| `annotation_masks_rle` | Optional explicit mask-file path; set this for the updated HF `masks.json.gz` filename. |
+| `annotations_accepted` | Accepted-mask count. `--suite all` includes only rows with a positive value; a missing value is treated as zero. |
+| `records_total` | Number of annotation records in the selected inventory. |
 
-```text
-configs/cfr_dataset_index.template.tsv
-```
+Other template columns preserve the original extraction inventory and prompts. `python scripts/run_cfr_evaluation.py --help` lists model, retrieval, view, and exclusion options.
 
-Important columns:
+## Matching and coordinates
 
-- `dataset`: dataset key used by the evaluator.
-- `group`: dataset grouping used only for organization.
-- `raw_image_root`: root directory containing source images.
-- `central_metadata_input`: JSON or CSV metadata file used by the evaluator.
-- `central_mask_dir`: directory containing mask files for the dataset.
-- `records_total`: eligible annotation records.
-- `annotations_accepted`: annotation records with accepted masks.
-- `manifest_prompts`: text prompts used for SAM extraction.
-- `notes`: dataset-specific caveats.
+Masks are gzipped JSON with an `annotations` list. Each record has a string `annotation_id`, `present`, and a COCO compressed RLE `segmentation`; rejected records have null segmentation. RLE dimensions are `[height, width]`. Join masks to metadata by annotation ID, not row number. The auxiliary historical best-candidate file is not an evaluation input.
 
-## Included Per-Dataset Mask Directory
+CSV metadata must supply image paths (for example `path`) and identities (for example `identity`), with IDs matching the mask records. JSON uses `images` and `annotations` arrays with consistent references. A source annotation box is `[x,y,width,height]`; the evaluator rounds endpoints, clips to image bounds, and applies its recorded crop behavior. A mask's foreground `bbox` is not a replacement for that source annotation box.
 
-This repository includes the release-facing mask files under:
+The historical evaluator handles image-frame masks by cropping and uses nearest-neighbor resizing for dimension mismatches. Invalid or empty historical crop boxes fall back to the full image. This is compatibility behavior, not proof of correct alignment. Check prepared crops, resizing, EXIF orientation, and annotation IDs against the selected mask version. StripeSpotter's updated full-zebra mask must be aligned with the stored flank region when evaluating flanks. Unknown identities and missing masks are excluded; historically empty accepted masks are retained.
 
-```text
-Masks_data/
-  <dataset>/
-    annotation_masks_rle.json.gz
-    annotation_best_any_iou_masks_rle.json.gz
-```
+See the [HF cards and version guide](mask_releases.md) for the distinct historical and updated coordinate metadata. The historical archives do not contain the original identity/image/crop catalogue; source metadata is required.
 
-Both files are gzipped JSON files containing COCO-style compressed RLE masks
-from `pycocotools.mask.encode`. Their mask coordinate frame is the same as the
-internal extraction output: annotation-box coordinates for tight boxes, and
-image coordinates for full-image or crop-level annotations.
+## Reference protocol
 
-`annotation_masks_rle.json.gz` is the file consumed by CFR evaluation. It
-stores accepted masks only; annotations without an accepted mask have
-`present=false` and `segmentation=null`.
+The default reference gallery contains accepted-mask annotations with known identities, excluding the query itself. A valid query must have at least one other same-identity annotation in its gallery. Same-image and same-encounter exclusions are optional and are off in the reference protocol. Full, foreground, background-with-animal-shaped-hole, and silhouette views use the same accepted annotation set. Preserve the model, masks, metadata, gallery protocol, and view settings when comparing runs.
 
-`annotation_best_any_iou_masks_rle.json.gz` stores the best available candidate
-for each annotation, including candidates that did not pass the acceptance
-rule. It is included to support mask audit and failure inspection.
-
-Each JSON file has this structure:
-
-```json
-{
-  "format": "cfr-mask-rle-v1",
-  "rle_encoding": "COCO compressed RLE from pycocotools.mask.encode",
-  "dataset": "<dataset>",
-  "annotations": [
-    {
-      "annotation_id": "<annotation id>",
-      "present": true,
-      "segmentation": {"size": [height, width], "counts": "<compressed RLE>"},
-      "area": 123,
-      "bbox": [x, y, width, height]
-    }
-  ]
-}
-```
-
-Use `pycocotools.mask.decode(record["segmentation"])` to recover a binary mask
-for any record with `present=true`.
-
-## Internal Audit Mask Directory
-
-If users regenerate masks from SAM outputs, the richer internal audit directory
-has this structure:
+For recall `R_T`, random recall `R_rand`, and `S_T = max(0, R_T - R_rand)`:
 
 ```text
-<central_mask_dir>/
-  annotation_masks.pkl
-  annotation_best_any_iou_masks.pkl
-  annotation_match_metadata.jsonl
-  image_candidate_metadata.jsonl
-  extraction_summary.json
-  candidate_masks/
-    *.npz
+CFR = min(S_full, S_foreground) / (1 - R_rand)
+SSI = min(1, S_shortcut / S_full)
 ```
 
-`annotation_masks.pkl` maps annotation identifiers to accepted binary
-foreground masks. Records without accepted masks are stored as missing or
-`None` and are excluded from CFR evaluation. The release script
-`scripts/convert_mask_pickles_to_coco_rle.py` converts this pickle to
-`annotation_masks_rle.json.gz`.
+`S_shortcut` is the maximum above-chance signal among enabled shortcut views (background and silhouette by default), after any silhouette-policy exclusion. The code handles zero signal and degenerate denominators explicitly. The historical silhouette policy treats shape as identity evidence for configured datasets and changes which shortcut signal enters SSI; it does not change the CFR formula. Use `--silhouette_identity_datasets` to select that policy explicitly when changing the protocol. The background view retains an animal-shaped hole and can therefore contain silhouette information.
 
-`annotation_best_any_iou_masks.pkl` stores the best available candidate even
-when it does not pass the acceptance rule. The release script converts this
-pickle to `annotation_best_any_iou_masks_rle.json.gz`. The JSONL files store
-candidate scores, candidate boxes, IoU values, prompt metadata, and links to
-candidate mask arrays. These files are for audit and quality control.
+## Outputs
 
-## Acceptance Policy
+Evaluation writes local embeddings and per-dataset/per-query JSON/CSV metrics beneath `--output_root`. To aggregate numerical metrics:
 
-The paper extraction used:
-
-- `MIN_SAM_SCORE=0.0`
-- `ACCEPT_IOU=0.5` for tight source boxes
-- `CANDIDATE_MASK_MODE=box_crop`
-
-For cropped or full-image annotations, the highest-scoring candidate is used.
-StripeSpotter is handled with flank-region overlap alignment because its
-benchmark annotations are flank regions rather than whole-animal boxes.
-
-## Result Directory
-
-CFR evaluation writes:
-
-```text
-outputs/cfr/
-  embeddings/
-    <model>/
-      *.npz
-  results/
-    <model>/
-      <dataset>_<model>_cfr.json
-      <dataset>_<model>_cfr_per_query.csv
-  cfr_summary_reference.csv
-  cfr_summary_reference_k1.csv
-  cfr_results_compact_k1.csv
+```bash
+python scripts/summarize_cfr_results.py \
+  --results_root outputs/cfr --central_index configs/cfr_dataset_index.tsv \
+  --suite all --models miewid megadescriptor --ks 1 5 10 \
+  --output_name cfr_summary_reference
 ```
 
-The JSON files contain retrieval rates, above-random signals, shortcut view
-choice, SSI/CFR fields, and validity metadata. Per-query CSVs preserve the
-top-ranked annotations and hit flags, which makes table values auditable
-without rerunning embedding extraction.
+Generated outputs are ignored by Git. The repository contains computation and experiment configuration, without committed result tables or presentation-generation scripts.

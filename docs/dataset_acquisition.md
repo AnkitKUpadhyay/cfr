@@ -1,79 +1,23 @@
-# Dataset Acquisition Notes
+# Source images and annotations
 
-The code repository is designed to be path-configurable, not to redistribute
-source images. Reviewers can use the scripts directly after obtaining the
-source datasets and editing `configs/cfr_dataset_index.tsv`.
+Get source images and annotations from the original providers. [WildlifeDatasets](https://wildlifedatasets.github.io/wildlife-datasets/) supports acquisition and catalogues for many collections; some require Kaggle access or a separate provider download. Source links are listed in the [HF dataset card](https://huggingface.co/datasets/imageomics/cfr-wildlife-masks).
 
-## What Can Be Downloaded Automatically
-
-`scripts/download_wildlifedatasets_catalogues.py` uses the
-`wildlife-datasets` Python package to download/export catalogues for datasets
-that package exposes. This covers several of the WildlifeDatasets-backed
-collections used in the paper, such as CzechLynx, ReunionTurtles,
-AmvrakikosTurtles, ZakynthosTurtles, Melops, and BrownBearHeads when available
-through the installed package version or the local wrapper.
-
-Example:
+For supported catalogue classes:
 
 ```bash
 python scripts/download_wildlifedatasets_catalogues.py \
-  --root data/WildlifeDatasets \
-  --stats_root outputs/catalogues \
-  --datasets CzechLynx ReunionTurtles AmvrakikosTurtles Melops BrownBearHeads
+  --root data/WildlifeDatasets --stats_root outputs/catalogues \
+  --datasets CzechLynx ReunionTurtles AmvrakikosTurtles
 ```
 
-After download, update `raw_image_root` and `central_metadata_input` in
-`configs/cfr_dataset_index.tsv`.
+Class availability and provider access depend on the installed toolkit version. Keep credentials in the provider's normal authentication mechanism, outside this repository.
 
-## What Requires Separate Source Access
+## Match a mask version
 
-Not every dataset in the 34-dataset CFR suite can be fetched by one anonymous
-script. Some collections require:
+The historical masks use the original prepared evaluation IDs and crop geometry. A fresh WildlifeDatasets catalogue may not reproduce those identifiers or preprocessing. The updated HF collection supplies per-annotation source references and geometry in `metadata.parquet`, but identity labels still come from the source annotations. Verify the join and coordinate frame before evaluation; do not join by row order.
 
-- original dataset portals,
-- Kaggle credentials,
-- LILA/Wild Me downloads,
-- locally converted COCO/GZCD metadata,
-- or source-specific access conditions.
+For the current collection, datasets that already supply masks or foregrounds should use those assets. The historical archive retains original pipeline-generated masks for six such datasets to preserve the original resource; its card lists them explicitly.
 
-For those datasets, the release provides code, path templates, prompt metadata,
-and expected metadata/mask formats. The raw images should be obtained from the
-original source and cited according to the paper.
+Create a local dataset index using [the template](../configs/cfr_dataset_index.template.tsv). Set `raw_image_root`, `central_metadata_input`, and `central_mask_dir`, or provide an explicit `annotation_masks_rle` column. Keep only the rows you intend to evaluate. Local populated indices and generated data are ignored by Git.
 
-## Direct Use With the CFR Scripts
-
-WildlifeDatasets download is not, by itself, the whole CFR input.  It provides
-the source images and a catalogue.  The CFR evaluator then needs a row in
-`configs/cfr_dataset_index.tsv` that points to:
-
-1. source images,
-2. the metadata file listed in the dataset index,
-3. `annotation_masks.pkl` in each `central_mask_dir`,
-
-with metadata identifiers that match the keys in `annotation_masks.pkl`.
-The evaluator can read CSV or JSON metadata.  For CSV files it expects an image
-path column such as `path`, `image_path`, or `file_name`, and an identity column
-such as `identity`, `name`, `individual_id`, or `individual`.
-
-Once those paths and identifiers are aligned, the evaluator can be run directly:
-
-```bash
-python scripts/run_cfr_evaluation.py \
-  --central_index configs/cfr_dataset_index.tsv \
-  --suite all \
-  --models miewid megadescriptor \
-  --mode extract_eval \
-  --output_root outputs/cfr \
-  --ks 1 5 10 \
-  --device cuda:0
-```
-
-If the separate mask artifact is provided, reviewers do not need to rerun SAM
-to reproduce the CFR retrieval tables. They only need the source images and the
-accepted-mask artifact.
-
-In short: for WildlifeDatasets-backed datasets, the intended workflow is
-download/export catalogue, point the dataset-index row to that image root and
-metadata file, add the released `annotation_masks.pkl`, then run CFR.  Without
-the released mask artifact, reviewers must first run the SAM extraction scripts
-to create the accepted masks.
+See [mask downloads](mask_releases.md) for version-specific paths and [evaluation inputs](artifact_manifest.md) for metadata fields and geometry requirements. No source images, identity catalogues, model weights, or generated evaluation results are bundled with the code.

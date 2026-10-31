@@ -147,55 +147,10 @@ def write_compact_csv(rows: list[dict[str, Any]], path: Path) -> None:
             )
 
 
-def score3(value: float | None) -> str:
-    if value is None or not math.isfinite(value):
-        return "--"
-    return f"{value:.3f}"
-
-
-def write_latex(rows: list[dict[str, Any]], path: Path) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    lines = [
-        r"\begin{table*}[!t]",
-        r"\centering",
-        r"\scriptsize",
-        r"\setlength{\tabcolsep}{2.5pt}",
-        r"\begin{tabular}{@{}llrrrrrr@{}}",
-        r"\toprule",
-        r"\textbf{Dataset} & \textbf{Model} & \textbf{Random} & \textbf{Full} & \textbf{Frg.} & \textbf{Bgr.} & \textbf{SSI} & \textbf{CFR} \\",
-        r"\midrule",
-    ]
-    previous_dataset = None
-    for row in rows:
-        dataset = row["dataset"]
-        if previous_dataset is not None and dataset != previous_dataset:
-            lines.append(r"\midrule")
-        label = dataset if dataset != previous_dataset else ""
-        lines.append(
-            f"{label} & {row['model']} & {score3(row['random_at1'])} & "
-            f"{score3(row['full_at1'])} & {score3(row['foreground_at1'])} & "
-            f"{score3(row['background_at1'])} & {score3(row['ssi'])} & "
-            f"{score3(row['cfr'])} \\\\"
-        )
-        previous_dataset = dataset
-    lines.extend(
-        [
-            r"\bottomrule",
-            r"\end{tabular}",
-            r"\caption{\textbf{Counterfactual foreground retrieval.} SSI and CFR are recomputed from saved retrieval rates using the paper definitions.}",
-            r"\label{tab:cfr-paper-scores}",
-            r"\end{table*}",
-            "",
-        ]
-    )
-    path.write_text("\n".join(lines))
-
-
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--input_csv", type=Path, required=True)
     parser.add_argument("--output_csv", type=Path, required=True)
-    parser.add_argument("--output_tex", type=Path)
     parser.add_argument("--k", type=int, default=1)
     parser.add_argument(
         "--silhouette_identity_datasets",
@@ -214,8 +169,6 @@ def main() -> None:
         for row in read_rows(args.input_csv, args.k)
     ]
     write_compact_csv(rows, args.output_csv)
-    if args.output_tex:
-        write_latex(rows, args.output_tex)
     print(f"Wrote {len(rows)} rows to {args.output_csv}")
 
 
