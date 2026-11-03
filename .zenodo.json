@@ -1,0 +1,42 @@
+{
+  "title": "CounterFactual Retrieval (CFR)",
+  "version": "0.3.0",
+  "upload_type": "software",
+  "description": "<p>Code for CounterFactual Retrieval for Evidence-Aware Individual Animal Identification, accepted at WACV 2027. The repository provides foreground-mask generation, retrieval evaluation, and experiment configurations. The cfr-sam3-masks package provides the updated mask extractor; evaluation workflows are provided as scripts.</p><p>Foreground masks are available separately at <a href=\"https://huggingface.co/datasets/imageomics/cfr-wildlife-masks\">CFR Wildlife Masks</a>. Source images and model weights are obtained separately.</p><p>Supported by the Imageomics Institute, funded by the US National Science Foundation under Award #2118240. Opinions, findings, conclusions and recommendations are those of the authors and do not necessarily reflect the views of the National Science Foundation.</p>",
+  "creators": [
+    {"name": "Upadhyay, Ankit Kumar"},
+    {"name": "Algasov, Aleksandr"},
+    {"name": "Nepovinnykh, Ekaterina"},
+    {"name": "Zolotarev, Fedor"},
+    {"name": "Eerola, Tuomas"},
+    {"name": "Kälviäinen, Heikki"},
+    {"name": "Stewart, Charles V."},
+    {"name": "Picek, Lukáš"}
+  ],
+  "keywords": [
+    "individual animal identification",
+    "counterfactual retrieval",
+    "foreground segmentation",
+    "wildlife re-identification",
+    "computer vision"
+  ],
+  "license": "MIT",
+  "access_right": "open",
+  "language": "eng",
+  "grants": [
+    {"id": "021nxhr62::2118240"}
+  ],
+  "related_identifiers": [
+    {
+      "identifier": "https://github.com/AnkitKUpadhyay/cfr",
+      "relation": "isSupplementTo",
+      "scheme": "url"
+    },
+    {
+      "identifier": "https://huggingface.co/datasets/imageomics/cfr-wildlife-masks",
+      "relation": "references",
+      "scheme": "url",
+      "resource_type": "dataset"
+    }
+  ]
+}

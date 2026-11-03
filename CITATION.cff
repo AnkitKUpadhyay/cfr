@@ -1,0 +1,61 @@
+cff-version: 1.2.0
+message: "Please cite the CFR paper and the version of the software used."
+type: software
+title: "CounterFactual Retrieval (CFR)"
+version: "0.3.0"
+abstract: >-
+  Code for CounterFactual Retrieval for Evidence-Aware Individual Animal
+  Identification, including foreground-mask generation, retrieval evaluation,
+  and experiment configurations. The cfr-sam3-masks package provides the
+  updated mask extractor; evaluation workflows are provided as scripts.
+authors:
+  - family-names: Upadhyay
+    given-names: "Ankit Kumar"
+  - family-names: Algasov
+    given-names: Aleksandr
+  - family-names: Nepovinnykh
+    given-names: Ekaterina
+  - family-names: Zolotarev
+    given-names: Fedor
+  - family-names: Eerola
+    given-names: Tuomas
+  - family-names: Kälviäinen
+    given-names: Heikki
+  - family-names: Stewart
+    given-names: "Charles V."
+  - family-names: Picek
+    given-names: Lukáš
+repository-code: "https://github.com/AnkitKUpadhyay/cfr"
+url: "https://github.com/AnkitKUpadhyay/cfr"
+license: MIT
+keywords:
+  - "individual animal identification"
+  - "counterfactual retrieval"
+  - "foreground segmentation"
+  - "wildlife re-identification"
+  - "computer vision"
+preferred-citation:
+  type: conference-paper
+  title: "CounterFactual Retrieval for Evidence-Aware Individual Animal Identification"
+  authors:
+    - family-names: Upadhyay
+      given-names: "Ankit Kumar"
+    - family-names: Algasov
+      given-names: Aleksandr
+    - family-names: Nepovinnykh
+      given-names: Ekaterina
+    - family-names: Zolotarev
+      given-names: Fedor
+    - family-names: Eerola
+      given-names: Tuomas
+    - family-names: Kälviäinen
+      given-names: Heikki
+    - family-names: Stewart
+      given-names: "Charles V."
+    - family-names: Picek
+      given-names: Lukáš
+  collection-title: "IEEE/CVF Winter Conference on Applications of Computer Vision (WACV)"
+  year: 2027
+  notes: "Accepted"
+# Add date-released when this software version is released.
+# Add the software concept DOI after the first Zenodo archive is created.

@@ -79,6 +79,8 @@ Run the lightweight regression suite with `python -m unittest discover -s tests 
 
 ## Citation
 
+Machine-readable software citation metadata is available in [CITATION.cff](CITATION.cff), with matching archive metadata in [.zenodo.json](.zenodo.json).
+
 Please cite CFR and the relevant source datasets/papers, [WildlifeDatasets](https://github.com/WildlifeDatasets/wildlife-datasets), and [SAM3](https://github.com/facebookresearch/sam3).
 
 ```bibtex
