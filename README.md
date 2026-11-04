@@ -1,4 +1,4 @@
-# CounterFactual Retrieval (CFR)
+# CounterFactual Retrieval for Evidence-Aware Individual Animal Identification
 
 This repository contains code for **CounterFactual Retrieval for Evidence-Aware Individual Animal Identification**, accepted at **WACV 2027**. It provides mask generation, CFR evaluation, and experiment configurations for individual animal identification. Foreground masks are available on [Hugging Face](https://huggingface.co/datasets/imageomics/cfr-wildlife-masks).
 

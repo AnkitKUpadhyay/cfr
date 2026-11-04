@@ -27,6 +27,10 @@ authors:
     given-names: Lukáš
 repository-code: "https://github.com/AnkitKUpadhyay/cfr"
 url: "https://github.com/AnkitKUpadhyay/cfr"
+identifiers:
+  - description: "The GitHub release URL of tag v0.3.0."
+    type: url
+    value: "https://github.com/AnkitKUpadhyay/cfr/releases/tag/v0.3.0"
 license: MIT
 keywords:
   - "individual animal identification"
