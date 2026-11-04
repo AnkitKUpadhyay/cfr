@@ -1,8 +1,9 @@
 {
   "title": "CounterFactual Retrieval (CFR)",
   "version": "0.3.0",
+  "publication_date": "2026-11-04",
   "upload_type": "software",
-  "description": "<p>Code for CounterFactual Retrieval for Evidence-Aware Individual Animal Identification, accepted at WACV 2027. The repository provides foreground-mask generation, retrieval evaluation, and experiment configurations. The cfr-sam3-masks package provides the updated mask extractor; evaluation workflows are provided as scripts.</p><p>Foreground masks are available separately at <a href=\"https://huggingface.co/datasets/imageomics/cfr-wildlife-masks\">CFR Wildlife Masks</a>. Source images and model weights are obtained separately.</p><p>Supported by the Imageomics Institute, funded by the US National Science Foundation under Award #2118240. Opinions, findings, conclusions and recommendations are those of the authors and do not necessarily reflect the views of the National Science Foundation.</p>",
+  "description": "<p>Code for CounterFactual Retrieval for Evidence-Aware Individual Animal Identification, accepted at WACV 2027. The repository provides CFR and SSI metrics and an evaluation framework for evidence-aware animal re-identification. The evaluation compares full, foreground, background, and silhouette views to assess the evidence used for individual identification. It includes retrieval and robustness evaluation scripts, experiment configurations, and supporting mask-generation and download tools.</p><p>Foreground masks are available separately at <a href=\"https://huggingface.co/datasets/imageomics/cfr-wildlife-masks\">CFR Wildlife Masks</a>. Source images and model weights are obtained separately.</p><p>Supported by the Imageomics Institute, funded by the US National Science Foundation under Award #2118240. Opinions, findings, conclusions and recommendations are those of the authors and do not necessarily reflect the views of the National Science Foundation.</p>",
   "creators": [
     {"name": "Upadhyay, Ankit Kumar"},
     {"name": "Algasov, Aleksandr"},

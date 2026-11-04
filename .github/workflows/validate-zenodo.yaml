@@ -1,0 +1,27 @@
+name: Check Zenodo metadata
+
+on:
+  push:
+    paths:
+      - '.zenodo.json'
+      - '.github/workflows/validate-zenodo.yaml'
+  pull_request:
+    paths:
+      - '.zenodo.json'
+      - '.github/workflows/validate-zenodo.yaml'
+
+permissions:
+  contents: read
+
+jobs:
+  check-zenodo-metadata:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+      - name: Check .zenodo.json file
+        run: npx --yes zenodraft@0.14.1 metadata validate .zenodo.json

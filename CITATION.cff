@@ -3,11 +3,15 @@ message: "Please cite the CFR paper and the version of the software used."
 type: software
 title: "CounterFactual Retrieval (CFR)"
 version: "0.3.0"
+date-released: "2026-11-04"
 abstract: >-
   Code for CounterFactual Retrieval for Evidence-Aware Individual Animal
-  Identification, including foreground-mask generation, retrieval evaluation,
-  and experiment configurations. The cfr-sam3-masks package provides the
-  updated mask extractor; evaluation workflows are provided as scripts.
+  Identification, providing CFR and SSI metrics and an evaluation framework
+  for evidence-aware animal re-identification. The evaluation compares full,
+  foreground, background, and silhouette views to assess the evidence used
+  for individual identification. The repository includes retrieval and
+  robustness evaluation scripts, experiment configurations, and supporting
+  mask-generation and download tools.
 authors:
   - family-names: Upadhyay
     given-names: "Ankit Kumar"
@@ -61,5 +65,4 @@ preferred-citation:
   collection-title: "IEEE/CVF Winter Conference on Applications of Computer Vision (WACV)"
   year: 2027
   notes: "Accepted"
-# Add date-released when this software version is released.
 # Add the software concept DOI after the first Zenodo archive is created.
