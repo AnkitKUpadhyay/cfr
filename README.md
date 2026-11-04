@@ -1,5 +1,7 @@
 # CounterFactual Retrieval for Evidence-Aware Individual Animal Identification
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23963558.svg)](https://doi.org/10.5281/zenodo.23963558)
+
 This repository contains code for **CounterFactual Retrieval for Evidence-Aware Individual Animal Identification**, accepted at **WACV 2027**. It provides mask generation, CFR evaluation, and experiment configurations for individual animal identification. Foreground masks are available on [Hugging Face](https://huggingface.co/datasets/imageomics/cfr-wildlife-masks).
 
 ## Install
@@ -84,6 +86,8 @@ Run the lightweight regression suite with `python -m unittest discover -s tests 
 ## Citation
 
 Machine-readable software citation metadata is available in [CITATION.cff](CITATION.cff), with matching archive metadata in [.zenodo.json](.zenodo.json).
+
+The software is archived on Zenodo. Cite the [all-versions DOI](https://doi.org/10.5281/zenodo.23963558) to reference CFR across releases.
 
 Please cite CFR and the relevant source datasets/papers, [WildlifeDatasets](https://github.com/WildlifeDatasets/wildlife-datasets), and [SAM3](https://github.com/facebookresearch/sam3).
 

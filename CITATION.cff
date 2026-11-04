@@ -31,10 +31,14 @@ authors:
     given-names: Lukáš
 repository-code: "https://github.com/Imageomics/cfr"
 url: "https://github.com/Imageomics/cfr"
+doi: "10.5281/zenodo.23963558"
 identifiers:
   - description: "The GitHub release URL of tag v0.3.0."
     type: url
     value: "https://github.com/Imageomics/cfr/releases/tag/v0.3.0"
+  - description: "The source-code commit archived in version 0.3.0."
+    type: url
+    value: "https://github.com/Imageomics/cfr/tree/acd47c5f26a0aa121ef6021c4681e8e322d03a96"
 license: MIT
 keywords:
   - "individual animal identification"
@@ -65,4 +69,3 @@ preferred-citation:
   collection-title: "IEEE/CVF Winter Conference on Applications of Computer Vision (WACV)"
   year: 2027
   notes: "Accepted"
-# Add the software concept DOI after the first Zenodo archive is created.
