@@ -35,6 +35,8 @@ python scripts/download_masks.py --release standardized --datasets NyalaData --o
 
 The downloader pins verified HF commits, checks file hashes, and separates the two versions. See [mask versions and file formats](docs/mask_releases.md) for dataset lists, coordinates, and source matching. The historical code and artifacts are also preserved under the GitHub tag `paper-code-v1`.
 
+CFR mask loading and CFR/SSI evaluation support is integrated into [WildlifeDatasets](https://github.com/WildlifeDatasets/wildlife-datasets); see the [upstream integration PR](https://github.com/WildlifeDatasets/wildlife-datasets/pull/57) for the implementation.
+
 ## Generate masks
 
 **Updated extractor:** supply annotation metadata, an image directory, and a species/body-part prompt. Validate inputs before running inference:
@@ -51,6 +53,8 @@ Source boxes are cropped before SAM3; prepared crops and full images are used as
 **Legacy extractor:** the original script, job launcher, and prompt template remain available. Its box-IoU/highest-confidence rules differ from the updated extractor. Follow [legacy extraction](docs/legacy_mask_generation.md); downloading the historical masks is the direct way to use the frozen release.
 
 ## Evaluate CFR
+
+The default checkpoints are [MIEW-ID MSV3](https://huggingface.co/conservationxlabs/miewid-msv3), loaded through Transformers, and [MegaDescriptor-L-384](https://huggingface.co/BVRA/MegaDescriptor-L-384), loaded through `timm`. During embedding extraction, these libraries download and cache the checkpoints when needed. MIEW-ID also loads the provider's custom model code with `trust_remote_code=True`. The model cards provide training details and citations.
 
 Obtain the source images and matching identity/crop metadata, then configure their paths:
 
