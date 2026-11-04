@@ -7,7 +7,7 @@ This repository contains code for **CounterFactual Retrieval for Evidence-Aware 
 Use Python 3.10 or newer in a dedicated environment:
 
 ```bash
-git clone --depth 1 https://github.com/AnkitKUpadhyay/cfr.git
+git clone --depth 1 https://github.com/Imageomics/cfr.git
 cd cfr
 python -m venv .venv
 source .venv/bin/activate
