@@ -24,8 +24,10 @@ Two mask versions are available. **Use the historical masks for the original eva
 
 | Version | Purpose | Extractor |
 |---|---|---|
-| `paper` | Original 34-dataset evaluation mask release | [Legacy SAM3 script](scripts/extract_wildlifedatasets_sam_masks.py) |
+| [`paper`](https://huggingface.co/datasets/imageomics/cfr-wildlife-masks/tree/paper) | Original 34-dataset evaluation mask release | [Legacy SAM3 script](scripts/extract_wildlifedatasets_sam_masks.py) |
 | `standardized` | Updated annotation-input selection procedure | [`sam3_masks`](sam3_masks/) |
+
+The dataset DOI [10.57967/hf/11469](https://doi.org/10.57967/hf/11469) identifies the updated `standardized` masks.
 
 Download only the datasets you need:
 
@@ -100,6 +102,21 @@ Please cite CFR and the relevant source datasets/papers, [WildlifeDatasets](http
   booktitle = {IEEE/CVF Winter Conference on Applications of Computer Vision (WACV)},
   year = {2027},
   note = {Accepted}
+}
+```
+
+For the updated `standardized` mask dataset, cite:
+
+```bibtex
+@misc{cfr_wildlife_masks,
+  author = {Ankit Kumar Upadhyay and Aleksandr Algasov and Ekaterina Nepovinnykh
+            and Fedor Zolotarev and Tuomas Eerola and Heikki Kälviäinen
+            and Charles V. Stewart and Lukáš Picek},
+  title = {CFR Wildlife Masks},
+  year = {2026},
+  url = {https://huggingface.co/datasets/imageomics/cfr-wildlife-masks},
+  doi = {10.57967/hf/11469},
+  publisher = {Hugging Face}
 }
 ```
 
