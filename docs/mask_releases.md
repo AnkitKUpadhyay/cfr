@@ -7,7 +7,7 @@ Both mask collections are hosted in [imageomics/cfr-wildlife-masks](https://hugg
 | `paper` | Original 34-dataset CFR evaluation resource and original extractor | 457,238 | [`7655704d…`](https://huggingface.co/datasets/imageomics/cfr-wildlife-masks/tree/7655704d058af7fa4ed5e3b901cff1d521d7ede7) |
 | `standardized` | Updated extraction procedure, including PolarBearVidID; 34 datasets | 462,428 | [`3baa6a58…`](https://huggingface.co/datasets/imageomics/cfr-wildlife-masks/tree/3baa6a58da04cc18bf5e21f77cf0d366efe1e5f7) |
 
-These snapshots are currently available through [archive PR #2](https://huggingface.co/datasets/imageomics/cfr-wildlife-masks/discussions/2) and [PolarBearVidID PR #1](https://huggingface.co/datasets/imageomics/cfr-wildlife-masks/discussions/1). Permanent release tags are pending. The pinned commits are downloadable now and do not depend on either PR being merged. The two collections have different dataset coverage and annotation populations; updated masks do not reproduce the original inputs.
+Browse the original masks on the [`paper` branch](https://huggingface.co/datasets/imageomics/cfr-wildlife-masks/tree/paper) and the updated collection on [`main`](https://huggingface.co/datasets/imageomics/cfr-wildlife-masks/tree/main). The updated collection has dataset DOI [10.57967/hf/11469](https://doi.org/10.57967/hf/11469). Downloads use the pinned revisions listed above. The two collections have different dataset coverage and annotation populations; updated masks do not reproduce the original inputs.
 
 ## Download
 
